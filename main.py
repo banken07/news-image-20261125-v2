@@ -885,59 +885,76 @@ def scene_chart(cv, x, y, w, h):
     Layers: dark bg + faint area fill under the line + grid + candles +
     falling line with glow endpoint + volume bars + chip with shadow."""
     cv.fill_rect(x, y, w, h, NAVY_DK)
-    # grid
+    # grid (brighter, so the chart reads at thumbnail)
     for gy in range(1, 5):
-        cv.fill_rect(x, y + h * gy // 5, w, 1, (38, 52, 88))
+        cv.fill_rect(x, y + h * gy // 5, w, 1, (64, 84, 134))
     for gx in range(1, 7):
-        cv.fill_rect(x + w * gx // 7, y, 1, h, (38, 52, 88))
+        cv.fill_rect(x + w * gx // 7, y, 1, h, (64, 84, 134))
     # chart area is the left part; right column is a clean label panel
     cw = w - 132
     # falling red line (defined first so the area fill sits under it)
     pts = [(x + 10, y + 22), (x + cw * 0.25, y + 34), (x + cw * 0.42, y + 30),
            (x + cw * 0.6, y + 58), (x + cw * 0.78, y + 74), (x + cw - 12, y + 96)]
-    # faint area fill under the falling line (loss zone)
+    # faint area fill under the falling line (loss zone, deeper red)
     cv.fill_poly([(x + 10, y + h - 8)] + pts +
-                 [(x + cw - 12, y + h - 8)], (52, 20, 30))
-    # candlesticks (falling) — 12 bars now
+                 [(x + cw - 12, y + h - 8)], (72, 24, 32))
+    # candlesticks (falling) — 12 bars now, hotter colors + top lights
     tops = [18, 30, 26, 44, 40, 58, 52, 70, 66, 84, 78, 92]
     bw = cw // 18
     for i, t in enumerate(tops):
         bx = x + 12 + i * (cw - 24) // 12
         bh = 10 + (i % 3) * 4
-        col = RED_BR if i % 2 else (60, 140, 90)
+        col = (230, 70, 45) if i % 2 else (50, 190, 110)
+        hi = (255, 150, 100) if i % 2 else (140, 240, 180)
         cv.fill_rect(bx, y + t, bw, bh, col)
+        cv.fill_rect(bx, y + t, bw, 2, hi)
         cv.fill_rect(bx + bw // 2, y + t - 6, 1, bh + 12, col)
+    # glowing drop-trail: wide dark-red underlay, mid red, bright core
     for a, b in zip(pts, pts[1:]):
-        cv.line(a[0], a[1], b[0], b[1], RED_BR, 3)
+        cv.line(a[0], a[1], b[0], b[1], (110, 35, 22), 9)
+    for a, b in zip(pts, pts[1:]):
+        cv.line(a[0], a[1], b[0], b[1], RED_BR, 6)
+    for a, b in zip(pts, pts[1:]):
+        cv.line(a[0], a[1], b[0], b[1], (255, 120, 50), 3)
     for (px, py) in pts:
         cv.circle(px, py, 3, FLAME)
     # glow at the last point (the fall's end)
     glow(cv, pts[-1][0], pts[-1][1], 12,
          [(70, 30, 22), (150, 50, 30), (255, 170, 60)])
-    # volume bars along the bottom of the chart area
+    # volume bars along the bottom of the chart area (red on down days)
     vols = [4, 7, 5, 9, 6, 11, 8, 12, 9, 13, 10, 12]
     for i, vh in enumerate(vols):
         bx = x + 12 + i * (cw - 24) // 12
-        cv.fill_rect(bx, y + h - 6 - vh, bw, vh, (70, 90, 130))
-    # chip, bottom-left (with drop shadow)
+        cv.fill_rect(bx, y + h - 6 - vh, bw, vh,
+                     (180, 60, 40) if i >= 9 else (90, 120, 175))
+    # chip, bottom-left (glow + brighter face + drop shadow)
     cx, cy = x + 34, y + h - 30
+    glow(cv, cx, cy, 20, [(18, 26, 54), (36, 56, 104)])
     cv.fill_rect(cx - 15, cy - 11, 32, 24, (8, 12, 26))
-    cv.fill_rect(cx - 16, cy - 12, 32, 24, (30, 42, 74))
-    rect_outline(cv, cx - 16, cy - 12, 32, 24, (120, 150, 220), 1)
+    cv.fill_rect(cx - 16, cy - 12, 32, 24, (40, 56, 96))
+    rect_outline(cv, cx - 16, cy - 12, 32, 24, (150, 180, 240), 1)
     cv.fill_rect(cx - 7, cy - 5, 14, 10, (70, 110, 190))
     for dx in (-20, -12, 12, 20):
         cv.fill_rect(cx + dx - 1, cy - 12, 2, 24, (120, 150, 220))
     cv.text(cx, cy + 4, "AI", 10, True, WHITE, align="center")
-    # label panel (solid, so text never sits on candles/line)
-    cv.fill_rect(x + w - 128, y + 8, 120, 84, (20, 30, 58))
-    cv.fill_rect(x + w - 128, y + 8, 1, 84, (60, 78, 120))
-    # right-side index list
+    # label panel (lighter, so text never sits on candles/line)
+    cv.fill_rect(x + w - 128, y + 8, 120, 84, (30, 44, 80))
+    cv.fill_rect(x + w - 128, y + 8, 1, 84, (90, 110, 165))
+    # right-side index list: white names, hot-red values, down triangles
     rows = [("KOSPI", "\u22125.6%"), ("TAIEX", "\u22126%"),
             ("NIKKEI", "\u22123.6%"), ("SOFTBANK", "\u221216.1%")]
     for i, (nm, val) in enumerate(rows):
         ry = y + 16 + i * 20
-        cv.text(x + w - 118, ry, nm, 10, True, (200, 210, 235))
-        cv.text(x + w - 14, ry, val, 10, True, RED_BR, align="right")
+        cv.text(x + w - 118, ry, nm, 10, True, WHITE)
+        nw = text_width(nm, 10, True)
+        vw = text_width(val, 10, True)
+        vx = x + w - 14 - vw
+        if vx - (x + w - 118 + nw) >= 12:
+            tx = x + w - 118 + nw + 2
+            cv.fill_poly([(tx, ry - 7), (tx + 8, ry - 7), (tx + 4, ry)],
+                         (255, 90, 60))
+        cv.text(x + w - 14, ry, val, 10, True, (255, 100, 70),
+                align="right")
 
 
 def scene_rocket(cv, x, y, w, h):
@@ -948,6 +965,12 @@ def scene_rocket(cv, x, y, w, h):
     vgrad(cv, x, y, w, h, SKY_NIGHT, SKY_NIGHT2)
     starfield(cv, x, y, w, h - 40, 12345)
     starfield(cv, x, y, w, (h - 40) // 2, 999)
+    # bright 4-point sparkles (clear of moon, station, tower, rocket)
+    for (sx, sy) in ((x + 100, y + 14), (x + 210, y + 12), (x + 250, y + 44),
+                     (x + 60, y + 48), (x + 135, y + 30), (x + 300, y + 60)):
+        cv.line(sx - 4, sy, sx + 4, sy, WHITE, 1)
+        cv.line(sx, sy - 4, sx, sy + 4, WHITE, 1)
+        cv.circle(sx, sy, 1, (255, 240, 180))
     # moon + halo
     glow(cv, x + w - 44, y + 26, 26,
          [(30, 34, 60), (70, 74, 100), (180, 180, 190)])
@@ -961,15 +984,27 @@ def scene_rocket(cv, x, y, w, h):
                   (x + 104, y + h - 22), (x + 160, y + h - 38),
                   (x + 220, y + h - 24), (x + w, y + h - 32),
                   (x + w, y + h - 16)], (22, 26, 22))
-    # Tiangong station, top-left
+    # Tiangong station, top-left (solar arrays with cell grid)
     sx, sy = x + 30, y + 16
     cv.fill_rect(sx, sy, 26, 8, (200, 205, 215))
     cv.fill_rect(sx - 18, sy + 2, 16, 4, (90, 130, 200))
     cv.fill_rect(sx + 28, sy + 2, 16, 4, (90, 130, 200))
+    for px in (sx - 18, sx + 28):
+        for gx in (px + 4, px + 8, px + 12):
+            cv.fill_rect(gx, sy + 2, 1, 4, (40, 70, 140))
+        cv.fill_rect(px, sy + 2, 16, 1, (160, 200, 255))
     cv.text(sx + 13, sy + 22, "TIANGONG", 8, True, (200, 205, 215),
             align="center")
-    # ground
-    cv.fill_rect(x, y + h - 16, w, 16, (30, 34, 26))
+    # ground: Earth limb — blue gradient band + glowing curved rim
+    vgrad(cv, x, y + h - 16, w, 16, (40, 90, 180), (12, 24, 56))
+    glow(cv, x + w // 2, y + h - 18, 22, [(18, 36, 80), (50, 100, 190)])
+    rim = [(x, y + h - 16), (x + w * 0.25, y + h - 19),
+           (x + w * 0.5, y + h - 20), (x + w * 0.75, y + h - 19),
+           (x + w, y + h - 16)]
+    for a, b in zip(rim, rim[1:]):
+        cv.line(a[0], a[1], b[0], b[1], (30, 70, 150), 5)
+    for a, b in zip(rim, rim[1:]):
+        cv.line(a[0], a[1], b[0], b[1], (150, 200, 255), 2)
     # floodlight poles + cones (clear of moon, station, tower)
     for fx in (x + 26, x + w - 26):
         cv.fill_rect(fx, y + h - 52, 3, 36, (90, 95, 105))
@@ -990,12 +1025,21 @@ def scene_rocket(cv, x, y, w, h):
     for (ox, oy, r) in ((-28, -8, 12), (-14, -4, 15), (0, -10, 13),
                         (14, -4, 15), (28, -8, 12)):
         cv.circle(x + w // 2 + ox, y + h - 18 + oy, r, (150, 150, 155))
-    # flame glow + flame
+    # layered exhaust plume: outer, mid, inner core + ground flash
     fx, fy = x + w // 2, y + h - 52
     glow(cv, fx, fy + 18, 26,
          [(90, 40, 16), (190, 90, 30), (255, 170, 60)])
+    glow(cv, fx, y + h - 16, 22,
+         [(90, 50, 20), (200, 110, 40), (255, 200, 90)])
+    cv.fill_poly([(fx - 14, fy + 4), (fx + 14, fy + 4), (fx, fy + 48)],
+                 (190, 80, 25))
     cv.fill_poly([(fx - 9, fy), (fx + 9, fy), (fx, fy + 36)], FLAME)
     cv.fill_poly([(fx - 5, fy), (fx + 5, fy), (fx, fy + 26)], FIRE)
+    cv.fill_poly([(fx - 3, fy), (fx + 3, fy), (fx, fy + 16)],
+                 (255, 240, 190))
+    # plume-edge smoke puffs
+    cv.circle(fx - 20, fy + 30, 6, SMOKE)
+    cv.circle(fx + 20, fy + 30, 6, SMOKE)
     # rocket body (shaded: light stripe left, shadow right)
     rx, ry = x + w // 2, y + 44
     cv.fill_poly([(rx - 10, ry + 62), (rx + 10, ry + 62),
@@ -1004,8 +1048,11 @@ def scene_rocket(cv, x, y, w, h):
     cv.fill_poly([(rx - 10, ry + 12), (rx + 10, ry + 12),
                   (rx, ry - 2)], RED_BR)
     cv.fill_rect(rx - 10, ry + 30, 20, 8, (36, 80, 180))
-    cv.fill_rect(rx - 10, ry + 12, 4, 50, (225, 225, 230))
-    cv.fill_rect(rx + 6, ry + 12, 4, 50, (190, 190, 195))
+    cv.fill_rect(rx - 10, ry + 12, 5, 50, WHITE)
+    cv.fill_rect(rx + 5, ry + 12, 5, 50, (175, 175, 180))
+    # stage band + separation line
+    cv.fill_rect(rx - 10, ry + 42, 20, 3, (200, 60, 50))
+    cv.fill_rect(rx - 10, ry + 38, 20, 1, (60, 60, 70))
     cv.fill_poly([(rx - 10, ry + 44), (rx - 20, ry + 62),
                   (rx - 10, ry + 62)], RED_BR)
     cv.fill_poly([(rx + 10, ry + 44), (rx + 20, ry + 62),
@@ -1032,42 +1079,65 @@ def scene_tanker(cv, x, y, w, h):
     # coast strips (two ridges: far pale, near dark)
     cv.fill_poly([(x, y + int(h * 0.62)), (x + 62, y + int(h * 0.46)),
                   (x + 118, y + int(h * 0.62))], (140, 104, 78))
+    cv.fill_poly([(x, y + int(h * 0.62)), (x + 62, y + int(h * 0.44)),
+                  (x + 118, y + int(h * 0.62))], (120, 88, 66))
     cv.fill_poly([(x, y + int(h * 0.62)), (x + 62, y + int(h * 0.42)),
                   (x + 118, y + int(h * 0.62))], (96, 70, 52))
     cv.fill_poly([(x + w, y + int(h * 0.62)), (x + w - 56, y + int(h * 0.48)),
                   (x + w - 112, y + int(h * 0.62))], (140, 104, 78))
+    cv.fill_poly([(x + w, y + int(h * 0.62)), (x + w - 56, y + int(h * 0.46)),
+                  (x + w - 112, y + int(h * 0.62))], (120, 88, 66))
     cv.fill_poly([(x + w, y + int(h * 0.62)), (x + w - 56, y + int(h * 0.44)),
                   (x + w - 112, y + int(h * 0.62))], (96, 70, 52))
+    # tiny coastal structures: houses on the left ridge, lighthouse left
+    for hx in (x + 18, x + 34):
+        cv.fill_rect(hx, y + int(h * 0.56), 8, 6, (60, 44, 34))
+        cv.fill_rect(hx + 2, y + int(h * 0.56) + 2, 2, 2, (255, 220, 130))
+    cv.fill_rect(x + 96, y + int(h * 0.5), 4, 14, WHITE)
+    cv.fill_rect(x + 96, y + int(h * 0.5), 4, 3, RED_BR)
+    cv.circle(x + 98, y + int(h * 0.5) - 2, 2, (255, 240, 180))
     cv.text(x + 12, y + int(h * 0.52), "IRAN", 9, True, WHITE)
     cv.text(x + w - 12, y + int(h * 0.52), "OMAN", 9, True, WHITE,
             align="right")
-    # sea
+    # sea: dark top band, mid sea, lighter swell band at the bottom
     sy = y + int(h * 0.62)
-    cv.fill_rect(x, sy, w, h - int(h * 0.62), SEA)
+    cv.fill_rect(x, sy, w, 10, SEA_DK)
+    cv.fill_rect(x, sy + 10, w, h - int(h * 0.62) - 22, SEA)
+    cv.fill_rect(x, y + h - 12, w, 12, (40, 90, 140))
     # sun-glint column on the water under the sun
     gx = x + w - 52
     cv.fill_rect(gx - 14, sy, 28, h - int(h * 0.62), (120, 90, 50))
     cv.fill_rect(gx - 7, sy, 14, h - int(h * 0.62), (190, 140, 70))
     cv.fill_rect(gx - 3, sy, 6, h - int(h * 0.62), (240, 190, 110))
-    for wy in range(sy + 8, y + h, 10):
-        cv.line(x + 8, wy, x + w - 8, wy, SEA_DK, 1)
-    # distant tanker (small, left) + its smoke wisp
+    # layered wave crests (short bright dashes, staggered rows)
+    for wy, xs in ((sy + 16, (16, 60, 104, 148, 192, 236, 280)),
+                   (sy + 26, (34, 82, 130, 178, 226, 268)),
+                   (sy + 36, (16, 58, 100, 142, 184, 228, 272))):
+        for ox in xs:
+            cv.fill_rect(x + ox, wy, 14, 2, (130, 170, 210))
+    # distant tanker (small, left) + its smoke wisp + hull highlight
     dx, dy = x + 26, sy + 6
     cv.circle(dx + 26, dy - 16, 6, SMOKE)
     cv.circle(dx + 32, dy - 24, 5, SMOKE)
     cv.fill_rect(dx, dy, 52, 10, (20, 26, 40))
+    cv.fill_rect(dx, dy, 52, 2, (120, 130, 145))
     cv.fill_rect(dx + 34, dy - 8, 12, 8, (220, 220, 225))
     cv.fill_rect(dx + 8, dy - 4, 6, 4, (220, 220, 225))
     # main tanker
     tx, ty = x + w // 2 - 78, sy + 8
     cv.fill_poly([(tx, ty), (tx + 156, ty), (tx + 146, ty + 22),
                   (tx + 10, ty + 22)], (30, 34, 44))
-    cv.fill_rect(tx + 118, ty - 16, 22, 16, (225, 225, 230))
+    # deck-edge highlight + portholes + bright waterline stripe
+    cv.fill_rect(tx + 2, ty, 152, 2, (180, 190, 200))
+    for px in (tx + 20, tx + 40, tx + 60, tx + 80, tx + 100):
+        cv.circle(px, ty + 12, 2, (200, 205, 215))
+    cv.fill_rect(tx + 118, ty - 16, 22, 16, (235, 235, 240))
     cv.fill_rect(tx + 122, ty - 12, 5, 4, NAVY_DK)
     cv.fill_rect(tx + 131, ty - 12, 5, 4, NAVY_DK)
     cv.fill_rect(tx + 122, ty - 5, 5, 4, NAVY_DK)
     cv.fill_rect(tx + 131, ty - 5, 5, 4, NAVY_DK)
-    cv.fill_rect(tx + 10, ty - 6, 60, 6, (150, 60, 40))
+    cv.fill_rect(tx + 140, ty - 14, 14, 4, (235, 235, 240))
+    cv.fill_rect(tx + 10, ty - 6, 60, 6, (200, 70, 45))
     # fire glow + fire + smoke on deck
     glow(cv, tx + 52, ty - 16, 24,
          [(120, 50, 20), (200, 90, 30), (255, 170, 60)])
@@ -1075,10 +1145,23 @@ def scene_tanker(cv, x, y, w, h):
         cv.circle(tx + ox, ty + oy, r, FIRE)
     for (ox, oy, r) in ((36, -12, 6), (52, -18, 7), (62, -12, 5)):
         cv.circle(tx + ox, ty + oy, r, FLAME)
-    for (ox, oy, r) in ((40, -44, 9), (52, -58, 11), (64, -74, 10),
-                        (76, -88, 8), (58, -66, 7)):
+    # smoke plume (kept inside the scene: top >= y+6) + dark core
+    for (ox, oy, r) in ((40, -40, 9), (52, -52, 11), (64, -62, 10),
+                        (76, -70, 8), (58, -56, 7), (44, -48, 7),
+                        (68, -58, 6)):
         cv.circle(tx + ox, ty + oy, r, SMOKE)
-    cv.text(tx + 78, ty + 38, "NAVAL MINE", 8, True, WHITE, align="center")
+    cv.circle(tx + 52, ty - 40, 6, (60, 60, 64))
+    # second plume from the distant tanker
+    for (ox, oy, r) in ((30, -30, 6), (36, -38, 7), (42, -32, 5)):
+        cv.circle(dx + ox, dy + oy, r, SMOKE)
+    # fire-glow reflections on the water below the hull
+    glow(cv, tx + 52, y + h - 12, 16,
+         [(120, 50, 20), (220, 100, 35), (255, 170, 60)])
+    for (ry2, rw, col) in ((y + h - 10, 64, (255, 150, 50)),
+                           (y + h - 5, 48, (230, 120, 40)),
+                           (y + h - 1, 32, (200, 90, 30))):
+        cv.fill_rect(tx + 52 - rw // 2, ry2, rw, 2, col)
+    cv.text(x + 14, ty + 38, "NAVAL MINE", 8, True, WHITE)
     # mine dots in water
     for (mx, my) in ((x + 24, sy + 34), (x + w - 30, sy + 30),
                      (x + w - 64, sy + 40)):
@@ -1091,7 +1174,7 @@ def scene_cpi(cv, x, y, w, h):
     """S1: rising CPI bars with +4.9% tag on a cream chip.
     Layers: cream bg + gridlines + shaded bars + value dots + trend
     arrow + outlined chip."""
-    cv.fill_rect(x, y, w, h, (238, 232, 214))
+    vgrad(cv, x, y, w, h, (246, 241, 226), (226, 216, 190))
     # horizontal gridlines
     for gy in (y + 14, y + 26, y + 38):
         cv.fill_rect(x + 8, gy, w - 16, 1, (210, 202, 180))
@@ -1100,17 +1183,20 @@ def scene_cpi(cv, x, y, w, h):
     for i, bh in enumerate(bars):
         bx = x + 12 + i * 27
         cv.fill_rect(bx, y + h - 8 - bh, bw, bh,
-                     RED_BR if i == 4 else (178, 90, 70))
-        # highlight edge + value dot on each bar
+                     (230, 60, 40) if i == 4 else (178, 90, 70))
+        # highlight edge + value dot on each bar (hot dot on the last)
         cv.fill_rect(bx, y + h - 8 - bh, 3, bh, (205, 120, 100))
-        cv.circle(bx + bw // 2, y + h - 10 - bh, 3, (120, 40, 30))
+        cv.circle(bx + bw // 2, y + h - 10 - bh,
+                  4 if i == 4 else 3,
+                  (255, 120, 80) if i == 4 else (120, 40, 30))
     # baseline axis
     cv.fill_rect(x + 8, y + h - 8, w - 16, 2, (120, 110, 90))
-    cv.line(x + 12, y + h - 8 - 44, x + w - 12, y + h - 8 - 8, RED, 2)
+    cv.line(x + 12, y + h - 8 - 44, x + w - 12, y + h - 8 - 8, RED, 3)
     # arrowhead at the trend-line end
     ex, ey = x + w - 12, y + h - 8 - 8
     cv.fill_poly([(ex, ey), (ex - 9, ey - 5), (ex - 9, ey + 5)], RED)
-    # opaque chip so the tag never sits on a bar (outlined for sharpness)
+    # opaque chip so the tag never sits on a bar (shadow + outline)
+    cv.fill_rect(x + w - 57, y + 7, 54, 20, (150, 140, 120))
     cv.fill_rect(x + w - 58, y + 6, 54, 20, (255, 250, 235))
     rect_outline(cv, x + w - 58, y + 6, 54, 20, RED_BR, 1)
     cv.text(x + w - 8, y + 21, "+4.9%", 14, True, RED, align="right")
@@ -1120,33 +1206,42 @@ def scene_garment(cv, x, y, w, h):
     """S2: garment factory + clothesline.
     Layers: sky band + sun + factory with lit windows + chimney smoke
     + two clothesline rows + white chip behind the metric."""
-    cv.fill_rect(x, y, w, h, (232, 226, 204))
-    # sky band + sun
-    cv.fill_rect(x, y, w, 14, (196, 216, 232))
+    vgrad(cv, x, y, w, h, (198, 218, 234), (232, 226, 204))
+    # sun with glow
+    glow(cv, x + w - 16, y + 9, 12, [(220, 225, 200), (255, 230, 150)])
     cv.circle(x + w - 16, y + 9, 6, (255, 220, 120))
     # factory
     cv.fill_rect(x + 10, y + 22, 62, h - 22, (150, 140, 120))
     cv.fill_poly([(x + 10, y + 22), (x + 24, y + 12), (x + 38, y + 22),
                   (x + 52, y + 12), (x + 66, y + 22)], (120, 110, 92))
     cv.fill_rect(x + 62, y + 8, 8, 16, (110, 100, 84))
+    cv.fill_rect(x + 30, y + 6, 5, 14, (110, 100, 84))
     # chimney smoke (kept inside the scene)
     cv.circle(x + 66, y + 8, 4, (220, 220, 215))
     cv.circle(x + 70, y + 4, 3, (220, 220, 215))
+    cv.circle(x + 32, y + 4, 3, (220, 220, 215))
     for wx in (18, 34, 50):
         cv.fill_rect(x + wx, y + 32, 8, 8, (255, 240, 180))
         cv.fill_rect(x + wx, y + 46, 8, 6, (255, 240, 180))
-    # clothesline (two rows)
+    # door, bottom-right of the factory
+    cv.fill_rect(x + 60, y + 50, 10, 12, (90, 80, 66))
+    cv.circle(x + 67, y + 56, 1, (255, 220, 130))
+    # clothesline (two rows, garments with shadows)
     cv.line(x + 84, y + 16, x + w - 8, y + 16, INK, 1)
     for i, col in enumerate((TEAL, RED_BR, AMBER)):
         sx = x + 92 + i * 30
+        cv.fill_rect(sx + 1, y + 33, 20, 2, (180, 175, 155))
         cv.fill_rect(sx, y + 16, 20, 16, col)
         cv.fill_rect(sx, y + 16, 20, 4, WHITE)
     cv.line(x + 96, y + 38, x + w - 8, y + 38, INK_SOFT, 1)
     for i, col in enumerate((AMBER, TEAL)):
         sx = x + 104 + i * 34
+        cv.fill_rect(sx + 1, y + 51, 18, 2, (180, 175, 155))
         cv.fill_rect(sx, y + 38, 18, 12, col)
-    # white chip behind the metric (sharp at thumbnail)
+    # white chip behind the metric (shadow + sharp at thumbnail)
     tw = text_width("17,000 TK", 9, True)
+    cv.fill_rect(x + w - 7 - tw - 8, y + h - 18, tw + 12, 17,
+                 (150, 140, 120))
     cv.fill_rect(x + w - 8 - tw - 8, y + h - 19, tw + 12, 17,
                  (255, 250, 235))
     cv.text(x + w - 8, y + h - 6, "17,000 TK", 9, True, TEAL, align="right")
@@ -1156,7 +1251,12 @@ def scene_treaty(cv, x, y, w, h):
     """S3: two flags over a signing table.
     Layers: sky gradient + window + flags with finials + table with
     shadow + document + pens + chairs."""
-    vgrad(cv, x, y, w, h, (210, 224, 238), (240, 236, 220))
+    vgrad(cv, x, y, w, h, (188, 208, 232), (244, 238, 222))
+    # bunting across the top middle (clear of flags and window)
+    cv.line(x + 62, y + 4, x + 124, y + 4, INK_SOFT, 1)
+    for i, col in enumerate((RED_BR, AMBER, TEAL, RED_BR)):
+        bx = x + 70 + i * 14
+        cv.fill_poly([(bx, y + 4), (bx + 10, y + 4), (bx + 5, y + 12)], col)
     # window, top-right
     cv.fill_rect(x + w - 34, y + 6, 24, 18, (180, 205, 225))
     cv.fill_rect(x + w - 23, y + 6, 2, 18, WHITE)
@@ -1164,15 +1264,19 @@ def scene_treaty(cv, x, y, w, h):
     # table shadow + table + document + pens
     cv.fill_rect(x + 56, y + h - 16, 78, 3, (200, 192, 170))
     cv.fill_rect(x + 52, y + h - 18, 82, 6, WOOD)
+    cv.fill_rect(x + 52, y + h - 16, 82, 1, (120, 84, 44))
     cv.fill_rect(x + 58, y + h - 12, 5, 12, WOOD)
     cv.fill_rect(x + 123, y + h - 12, 5, 12, WOOD)
     cv.fill_rect(x + 76, y + h - 26, 34, 9, WHITE)
     cv.line(x + 80, y + h - 23, x + 106, y + h - 23, INK_SOFT, 1)
     cv.line(x + 80, y + h - 20, x + 100, y + h - 20, INK_SOFT, 1)
+    cv.circle(x + 104, y + h - 22, 3, RED_BR)
     cv.line(x + 112, y + h - 27, x + 116, y + h - 22, INK, 1)
-    # chairs
+    # chairs with backs
     cv.fill_rect(x + 44, y + h - 26, 6, 14, (120, 100, 70))
+    cv.fill_rect(x + 44, y + h - 34, 6, 8, (120, 100, 70))
     cv.fill_rect(x + 140, y + h - 26, 6, 14, (120, 100, 70))
+    cv.fill_rect(x + 140, y + h - 34, 6, 8, (120, 100, 70))
     # Australia flag (left)
     cv.fill_rect(x + 16, y + 8, 8, 34, INK)
     cv.circle(x + 20, y + 6, 2, (255, 220, 60))
@@ -1196,12 +1300,15 @@ def scene_store(cv, x, y, w, h):
     """S4: supermarket front with striped awning.
     Layers: sky band + sun + storefront with shaded awning + windows
     with reflections + door + figures + cart + tree + pavement."""
-    cv.fill_rect(x, y, w, h, (236, 228, 208))
+    vgrad(cv, x, y, w, h, (198, 218, 234), (236, 228, 208))
     # sky band + sun
     cv.fill_rect(x, y, w, 12, (198, 218, 234))
     cv.circle(x + w - 14, y + 8, 5, (255, 220, 120))
     cv.fill_rect(x + 12, y + 18, w - 24, h - 18, (240, 232, 210))
     rect_outline(cv, x + 12, y + 18, w - 24, h - 18, INK_SOFT, 1)
+    # sign band above the awning
+    cv.fill_rect(x + 12, y + 13, w - 24, 5, RED_BR)
+    cv.fill_rect(x + 12, y + 13, w - 24, 1, (255, 150, 120))
     # striped awning (with shade under it)
     for i in range(8):
         col = RED_BR if i % 2 == 0 else WHITE
@@ -1209,6 +1316,10 @@ def scene_store(cv, x, y, w, h):
                       (x + 28 + i * 20, y + 30), (x + 8 + i * 20, y + 30)],
                      col)
     cv.fill_rect(x + 12, y + 30, w - 24, 3, (210, 200, 175))
+    # scalloped awning edge
+    for i in range(8):
+        col = RED_BR if i % 2 == 0 else WHITE
+        cv.circle(x + 22 + i * 20, y + 31, 3, col)
     # windows with reflections + door
     cv.fill_rect(x + 22, y + 36, 26, 16, (90, 130, 170))
     cv.line(x + 24, y + 38, x + 46, y + 50, (200, 220, 235), 1)
@@ -1216,13 +1327,17 @@ def scene_store(cv, x, y, w, h):
     cv.line(x + 140, y + 38, x + 162, y + 50, (200, 220, 235), 1)
     cv.fill_rect(x + 80, y + 36, 26, h - 36, (90, 70, 50))
     cv.circle(x + 100, y + 48, 2, (255, 220, 120))
-    # three figures
+    # three figures with ground shadows (fixed: were absolute coords,
+    # so they landed in the CPI card in v2.1)
     for fx, col in ((58, TEAL), (128, TEAL), (118, RED_BR)):
-        cv.circle(fx, y + 46, 4, (40, 40, 40))
-        cv.fill_rect(fx - 4, y + 50, 8, 12, col)
-    # shopping cart, bottom-left (clear of the left window) + pavement
+        cv.fill_rect(x + fx - 6, y + 60, 12, 2, (180, 170, 145))
+        cv.circle(x + fx, y + 46, 4, (40, 40, 40))
+        cv.fill_rect(x + fx - 4, y + 50, 8, 12, col)
+    # shopping cart, bottom-left (with goods) + pavement
     cv.fill_rect(x + 4, y + h - 8, w - 8, 2, (180, 170, 145))
     cv.line(x + 6, y + h - 16, x + 20, y + h - 16, INK, 1)
+    cv.fill_rect(x + 7, y + h - 20, 6, 4, TEAL)
+    cv.fill_rect(x + 13, y + h - 22, 5, 6, RED_BR)
     cv.line(x + 6, y + h - 16, x + 8, y + h - 8, INK, 1)
     cv.line(x + 20, y + h - 16, x + 18, y + h - 8, INK, 1)
     cv.circle(x + 9, y + h - 6, 2, INK)
@@ -1230,6 +1345,7 @@ def scene_store(cv, x, y, w, h):
     # tree, right edge
     cv.fill_rect(x + w - 12, y + 34, 3, 22, (90, 70, 50))
     cv.circle(x + w - 10, y + 30, 7, (90, 140, 70))
+    cv.circle(x + w - 6, y + 36, 4, (130, 185, 130))
 
 
 def scene_tariffs(cv, x, y, w, h):
@@ -1238,31 +1354,41 @@ def scene_tariffs(cv, x, y, w, h):
     steps + glowing tags."""
     vgrad(cv, x, y, w, h, NAVY, NAVY_LT)
     starfield(cv, x, y, w, h // 3, 4242)
-    # flag pole + flag, left (clear of the "16" tag)
+    starfield(cv, x, y, w, h // 2, 777)
+    # flag pole + flag, left (clear of the "16" tag) + white star dot
     cv.fill_rect(x + 10, y + 10, 3, 34, (200, 200, 205))
     cv.fill_poly([(x + 13, y + 10), (x + 30, y + 14), (x + 13, y + 18)],
                  (180, 40, 40))
-    # dome (shaded: light left, shadow right) + statue
+    cv.circle(x + 19, y + 14, 1, WHITE)
+    # dome (shaded: light left, shadow right) + statue with glow
     dx = x + w // 2
+    glow(cv, dx, y + 4, 8,
+         [(30, 32, 44), (90, 100, 140), (220, 220, 230)])
     cv.fill_poly([(dx - 26, y + 34), (dx + 26, y + 34), (dx, y + 12)], WHITE)
     cv.fill_poly([(dx, y + 34), (dx + 26, y + 34), (dx, y + 12)],
                  (200, 200, 205))
+    cv.line(dx - 26, y + 34, dx, y + 12, WHITE, 2)
     cv.fill_rect(dx - 34, y + 34, 68, 8, WHITE)
     cv.fill_rect(dx - 2, y + 6, 4, 8, WHITE)
     cv.circle(dx, y + 4, 3, WHITE)
     cv.fill_rect(dx - 42, y + 42, 84, 6, WHITE)
+    # warm lit dots on the architrave band
+    for wx in (dx - 30, dx - 10, dx + 10, dx + 30):
+        cv.circle(wx, y + 45, 2, (255, 220, 130))
     for cx in range(dx - 38, dx + 40, 12):
         cv.fill_rect(cx, y + 48, 5, 14, WHITE)
         cv.fill_rect(cx + 3, y + 48, 2, 14, (210, 210, 215))
     # steps
     cv.fill_rect(dx - 46, y + h - 8, 92, 4, (200, 200, 205))
     cv.fill_rect(dx - 40, y + h - 12, 80, 3, (170, 170, 178))
-    # tariff tags (clear of the story-number badge at top-left)
+    # tariff tags (shadow + warm outline so they read at thumbnail)
     cv.fill_rect(x + 33, y + 9, 28, 16, (120, 30, 30))
     cv.fill_rect(x + 34, y + 10, 26, 14, RED_BR)
+    rect_outline(cv, x + 34, y + 10, 26, 14, (255, 150, 120), 1)
     cv.text(x + 47, y + 21, "16", 10, True, WHITE, align="center")
     cv.fill_rect(x + w - 37, y + 11, 28, 16, (120, 30, 30))
     cv.fill_rect(x + w - 36, y + 12, 26, 14, RED_BR)
+    rect_outline(cv, x + w - 36, y + 12, 26, 14, (255, 150, 120), 1)
     cv.text(x + w - 23, y + 23, "%", 11, True, WHITE, align="center")
 
 
@@ -1273,9 +1399,9 @@ def scene_pyongyang(cv, x, y, w, h):
     vgrad(cv, x, y, w, h, (16, 22, 48), (40, 52, 92))
     starfield(cv, x, y, w, h - 20, 777)
     # moon + halo, top-right (halo kept inside the scene)
-    glow(cv, x + w - 22, y + 12, 12,
+    glow(cv, x + w - 22, y + 12, 18,
          [(30, 36, 66), (90, 100, 140), (220, 220, 230)])
-    cv.circle(x + w - 22, y + 12, 7, (235, 233, 220))
+    cv.circle(x + w - 22, y + 12, 8, (235, 233, 220))
     # pyramid hotel
     px = x + w // 2
     cv.fill_poly([(px - 46, y + h - 6), (px + 46, y + h - 6),
@@ -1284,25 +1410,33 @@ def scene_pyongyang(cv, x, y, w, h):
         t = (wy - (y + 8)) / max(1, (y + h - 6) - (y + 8))
         hw = 46 * (1 - t)
         cv.fill_rect(px - hw, wy, 2 * hw, 1, (200, 200, 210))
-    # lit windows on the pyramid (warm dots)
+    # left-edge highlight on the pyramid
+    cv.line(px - 46, y + h - 6, px, y + 8, (150, 160, 190), 2)
+    # lit windows on the pyramid (warm dots, all inside the slopes)
     for (wx, wy) in ((px - 20, y + 30), (px + 8, y + 26), (px - 6, y + 38),
-                     (px + 18, y + 40), (px - 14, y + 48)):
+                     (px + 12, y + 40), (px - 5, y + 48), (px + 2, y + 20),
+                     (px - 8, y + 44), (px + 2, y + 50), (px - 18, y + 34)):
         cv.fill_rect(wx, wy, 3, 3, (255, 220, 130))
     cv.fill_rect(px - 3, y + 4, 6, 8, (220, 60, 60))
     # smaller building silhouette, left (clear of flag + 48H chip)
     cv.fill_rect(x + 50, y + h - 26, 20, 20, (28, 34, 60))
     cv.fill_rect(x + 54, y + h - 22, 4, 4, (255, 220, 130))
     cv.fill_rect(x + 62, y + h - 22, 4, 4, (255, 220, 130))
-    # flag pole + flag
+    # flag pole + flag + white dot
     cv.fill_rect(x + 12, y + 14, 3, h - 14, INK)
     cv.fill_poly([(x + 15, y + 14), (x + 44, y + 18), (x + 15, y + 24)],
                  (200, 40, 40))
-    # ground lights
+    cv.circle(x + 22, y + 19, 2, WHITE)
+    # ground lights + reflection band
     for gx in (x + 84, x + 104, x + 124):
         cv.circle(gx, y + h - 8, 2, (255, 220, 130))
-    # dark chip behind the 48H metric
+    cv.fill_rect(x, y + h - 4, w, 2, (90, 110, 170))
+    # dark chip behind the 48H metric (shadow + outline)
     tw = text_width("48H", 10, True)
+    cv.fill_rect(x + w - 7 - tw - 8, y + h - 19, tw + 12, 17, (0, 0, 0))
     cv.fill_rect(x + w - 8 - tw - 8, y + h - 20, tw + 12, 17, (12, 16, 34))
+    rect_outline(cv, x + w - 8 - tw - 8, y + h - 20, tw + 12, 17,
+                 (255, 220, 130), 1)
     cv.text(x + w - 8, y + h - 6, "48H", 10, True, WHITE, align="right")
 
 
@@ -1311,15 +1445,16 @@ def scene_court(cv, x, y, w, h):
     Layers: warm bg + wall panels + columns with capitals + bench
     with shadow + books + gavel + scales + flag banner + cream chip
     behind GUILTY."""
-    cv.fill_rect(x, y, w, h, (226, 210, 176))
+    vgrad(cv, x, y, w, h, (234, 220, 188), (214, 196, 158))
     # wall panels
     for px in (x + 30, x + w - 32):
         cv.fill_rect(px, y + 6, 2, h - 12, (200, 182, 140))
-    # columns with capitals
+    # columns with capitals + bases
     for cx in (x + 12, x + w - 20):
         cv.fill_rect(cx - 2, y + 6, 12, 4, (214, 198, 158))
         cv.fill_rect(cx, y + 8, 8, h - 8, (200, 182, 140))
         cv.fill_rect(cx, y + 8, 3, h - 8, (214, 198, 158))
+        cv.fill_rect(cx - 2, y + h - 6, 12, 4, (214, 198, 158))
     # bench shadow + bench
     cv.fill_rect(x + 36, y + h - 18, w - 72, 3, (180, 160, 120))
     cv.fill_rect(x + 34, y + h - 20, w - 68, 6, WOOD)
@@ -1334,20 +1469,26 @@ def scene_court(cv, x, y, w, h):
     cv.fill_rect(x + 66, y + 22, 30, 3, (150, 110, 60))
     cv.line(x + 96, y + 27, x + 128, y + 40, (120, 84, 44), 4)
     cv.fill_rect(x + 62, y + 40, 76, 4, (120, 84, 44))
-    # scales
+    cv.fill_rect(x + 62, y + 40, 76, 1, (170, 130, 80))
+    # scales (with chains from beam ends to pan apexes)
     sx = x + w // 2
     cv.line(sx, y + 14, sx, y + 34, INK, 2)
     cv.line(sx - 16, y + 18, sx + 16, y + 18, INK, 2)
+    cv.line(sx - 16, y + 18, sx - 16, y + 24, INK, 1)
+    cv.line(sx + 16, y + 18, sx + 16, y + 24, INK, 1)
     cv.fill_poly([(sx - 24, y + 34), (sx - 8, y + 34), (sx - 16, y + 24)],
                  (150, 130, 80))
     cv.fill_poly([(sx + 8, y + 34), (sx + 24, y + 34), (sx + 16, y + 24)],
                  (150, 130, 80))
-    # flag banner, right edge (clear of the GUILTY chip)
+    # flag banner, right edge (two-tone, clear of the GUILTY chip)
     cv.fill_rect(x + w - 8, y + 22, 3, 26, (120, 100, 70))
     cv.fill_poly([(x + w - 5, y + 22), (x + w - 22, y + 26),
                   (x + w - 5, y + 30)], (140, 40, 40))
-    # cream chip behind the GUILTY metric
+    cv.fill_poly([(x + w - 5, y + 32), (x + w - 22, y + 36),
+                  (x + w - 5, y + 40)], (180, 60, 60))
+    # cream chip behind the GUILTY metric (shadow + outline)
     tw = text_width("GUILTY", 10, True)
+    cv.fill_rect(x + w - 7 - tw - 8, y + 3, tw + 12, 16, (180, 160, 120))
     cv.fill_rect(x + w - 8 - tw - 8, y + 2, tw + 12, 16, (255, 250, 235))
     rect_outline(cv, x + w - 8 - tw - 8, y + 2, tw + 12, 16, RED_BR, 1)
     cv.text(x + w - 8, y + 14, "GUILTY", 10, True, RED, align="right")
@@ -1362,25 +1503,37 @@ def scene_mine(cv, x, y, w, h):
     for i in range(8):
         cv.circle(x + 12 + (i * 23) % (w - 20), y + 8 + (i * 7) % 14, 3,
                   EARTH_DK)
-    # timber supports across the shaft
+    # earth strata bands (drawn before the shaft, so the tunnel cuts them)
+    cv.fill_rect(x, y + 16, w, 2, (104, 76, 50))
+    cv.fill_rect(x, y + 38, w, 2, (104, 76, 50))
+    # timber supports across the shaft + two more on the earth
     cv.line(x + 36, y + 6, x + 52, y + 6, (90, 66, 40), 3)
     cv.line(x + 62, y + 34, x + 78, y + 34, (90, 66, 40), 3)
+    cv.line(x + 20, y + 20, x + 36, y + 20, (90, 66, 40), 3)
+    cv.line(x + 100, y + 48, x + 116, y + 48, (90, 66, 40), 3)
     # shaft (diagonal dark tunnel)
     cv.fill_poly([(x + 30, y), (x + 52, y), (x + 96, y + h),
                   (x + 74, y + h)], (28, 20, 14))
-    # water at bottom + shimmer
+    # ladder rungs along the shaft centerline
+    for (rx, ry) in ((52, 16), (59, 25), (65, 34), (72, 43)):
+        cv.line(x + rx - 5, y + ry + 4, x + rx + 5, y + ry - 4,
+                (200, 170, 120), 1)
+    # water at bottom + shimmer + lamp reflection streak
     cv.fill_rect(x, y + h - 12, w, 12, (40, 90, 130))
     cv.line(x + 10, y + h - 8, x + 60, y + h - 8, (140, 180, 220), 1)
     cv.line(x + 110, y + h - 5, x + 170, y + h - 5, (140, 180, 220), 1)
+    cv.fill_rect(x + 80, y + h - 10, 8, 10, (200, 160, 80))
     # rope + helmet lamp + glow
     cv.line(x + 60, y, x + 96, y + h - 12, (220, 200, 150), 2)
-    glow(cv, x + 84, y + 30, 16,
+    glow(cv, x + 84, y + 30, 20,
          [(90, 70, 30), (180, 140, 60), (255, 220, 120)])
     cv.circle(x + 84, y + 30, 5, FLAME)
     cv.circle(x + 84, y + 30, 9, (255, 220, 120))
     cv.fill_rect(x + 76, y + 38, 16, 6, (240, 200, 60))
-    # ore cart, bottom-left
+    # ore cart, bottom-left (with gold lumps)
     cv.fill_rect(x + 12, y + h - 24, 22, 10, (70, 52, 36))
+    cv.circle(x + 28, y + h - 25, 2, (240, 200, 60))
+    cv.circle(x + 32, y + h - 26, 2, (240, 200, 60))
     cv.circle(x + 18, y + h - 12, 3, (30, 24, 18))
     cv.circle(x + 28, y + h - 12, 3, (30, 24, 18))
     # rocks
@@ -1388,9 +1541,12 @@ def scene_mine(cv, x, y, w, h):
                   (x + 17, y + h - 26)], (100, 84, 66))
     cv.fill_poly([(x + 150, y + h - 12), (x + 164, y + h - 12),
                   (x + 157, y + h - 22)], (100, 84, 66))
-    # dark chip behind the 100 M metric
+    # dark chip behind the 100 M metric (shadow + outline)
     tw = text_width("100 M", 9, True)
+    cv.fill_rect(x + w - 7 - tw - 8, y + 3, tw + 12, 15, (0, 0, 0))
     cv.fill_rect(x + w - 8 - tw - 8, y + 2, tw + 12, 15, (20, 16, 12))
+    rect_outline(cv, x + w - 8 - tw - 8, y + 2, tw + 12, 15,
+                 (255, 220, 120), 1)
     cv.text(x + w - 8, y + 14, "100 M", 9, True, WHITE, align="right")
 
 
@@ -1398,7 +1554,9 @@ def scene_blast(cv, x, y, w, h):
     """S9: lead-azide blast fireball.
     Layers: dusk gradient + ground + cracks + shock rings + fireball
     glow + smoke + debris + barrels + dark chip behind 9 AM CT."""
-    vgrad(cv, x, y, w, h, (30, 26, 22), (70, 50, 34))
+    # dusk gradient in three bands (hotter horizon at mid-height)
+    vgrad(cv, x, y, w, h // 2, (30, 26, 22), (80, 55, 35))
+    vgrad(cv, x, y + h // 2, w, h - h // 2, (80, 55, 35), (24, 20, 18))
     cx, cy = x + w // 2, y + h - 16
     # ground + cracks
     cv.fill_rect(x, y + h - 10, w, 10, (24, 20, 18))
@@ -1407,27 +1565,42 @@ def scene_blast(cv, x, y, w, h):
     # shock rings (kept inside the scene: cy-r >= y)
     cv.ring(cx, cy, 44, 42, (200, 180, 140))
     cv.ring(cx, cy, 32, 30, (220, 200, 160))
-    # fireball glow + fireball
+    # fireball glow + outer ring + fireball + hot core
     glow(cv, cx, cy - 6, 34,
          [(90, 40, 16), (190, 90, 30), (255, 170, 60)])
+    cv.ring(cx, cy - 6, 30, 28, (200, 120, 50))
     cv.circle(cx, cy - 6, 26, FIRE)
     cv.circle(cx, cy - 10, 18, FLAME)
-    cv.circle(cx - 6, cy - 14, 10, (255, 240, 180))
-    # smoke (kept inside the scene: tops >= y)
+    cv.circle(cx - 6, cy - 14, 12, (255, 240, 180))
+    # smoke (kept inside the scene: tops >= y) + dark cores
     for (ox, oy, r) in ((-34, -30, 9), (-22, -36, 10), (24, -34, 9),
-                        (26, -34, 8), (0, -38, 8)):
+                        (26, -34, 8), (0, -38, 8), (-46, -24, 7),
+                        (34, -32, 7)):
         cv.circle(cx + ox, cy + oy, r, SMOKE)
+    for (ox, oy, r) in ((-22, -36, 4), (26, -34, 4)):
+        cv.circle(cx + ox, cy + oy, r, (40, 35, 30))
     # flying debris (kept clear of the 9 AM CT chip, top-right)
     for (dx, dy) in ((cx - 44, cy - 22), (cx + 46, cy - 18),
                      (cx - 52, cy - 34), (cx - 60, cy - 18)):
         cv.fill_rect(dx, dy, 3, 3, (30, 26, 22))
-    # barrels
+    # debris motion streaks trailing toward the center
+    for (ax, ay, bx, by) in ((cx - 44, cy - 22, cx - 30, cy - 16),
+                             (cx + 46, cy - 18, cx + 32, cy - 14),
+                             (cx - 52, cy - 34, cx - 38, cy - 26),
+                             (cx - 60, cy - 18, cx - 46, cy - 14)):
+        cv.line(ax, ay, bx, by, (120, 100, 80), 1)
+    # barrels (hazard band + highlight edge)
     for bx in (x + 12, x + 26):
         cv.fill_rect(bx, y + h - 14, 10, 12, (120, 110, 100))
         cv.fill_rect(bx, y + h - 14, 10, 3, (90, 82, 74))
-    # dark chip behind the 9 AM CT metric
+        cv.fill_rect(bx, y + h - 9, 10, 2, (255, 200, 60))
+        cv.fill_rect(bx, y + h - 14, 2, 12, (180, 170, 160))
+    # dark chip behind the 9 AM CT metric (shadow + outline)
     tw = text_width("9 AM CT", 9, True)
+    cv.fill_rect(x + w - 7 - tw - 8, y + 3, tw + 12, 15, (0, 0, 0))
     cv.fill_rect(x + w - 8 - tw - 8, y + 2, tw + 12, 15, (16, 14, 12))
+    rect_outline(cv, x + w - 8 - tw - 8, y + 2, tw + 12, 15,
+                 (255, 220, 120), 1)
     cv.text(x + w - 8, y + 12, "9 AM CT", 9, True, WHITE, align="right")
 
 
@@ -1436,18 +1609,27 @@ def scene_births(cv, x, y, w, h):
     Layers: sky gradient + window + sun + rising curve with dots +
     crib with blanket + mobile moon/star + white chip for +12.2%."""
     vgrad(cv, x, y, w, h, (214, 230, 240), (240, 238, 226))
-    # window, top-left + sun
+    # window, top-left + sun with rays
     cv.fill_rect(x + 8, y + 6, 20, 16, (170, 205, 230))
     cv.fill_rect(x + 17, y + 6, 2, 16, WHITE)
     cv.fill_rect(x + 8, y + 13, 20, 2, WHITE)
     cv.circle(x + 18, y + 14, 4, (255, 220, 120))
+    for (ax, ay, bx, by) in ((x + 12, y + 8, x + 15, y + 11),
+                             (x + 24, y + 8, x + 21, y + 11),
+                             (x + 12, y + 20, x + 15, y + 17),
+                             (x + 24, y + 20, x + 21, y + 17)):
+        cv.line(ax, ay, bx, by, (255, 200, 100), 1)
     # rising curve (ends clear of the +12.2% chip, top-right)
     pts = [(x + 10, y + 44), (x + 50, y + 40), (x + 90, y + 34),
            (x + 122, y + 28)]
     for a, b in zip(pts, pts[1:]):
-        cv.line(a[0], a[1], b[0], b[1], TEAL, 2)
+        cv.line(a[0], a[1], b[0], b[1], TEAL, 3)
     for (px, py) in pts:
-        cv.circle(px, py, 2, TEAL)
+        cv.circle(px, py, 3, TEAL)
+    # amber sparkles above the curve
+    for (sx, sy) in ((x + 34, y + 30), (x + 70, y + 24)):
+        cv.line(sx - 3, sy, sx + 3, sy, AMBER, 1)
+        cv.line(sx, sy - 3, sx, sy + 3, AMBER, 1)
     # crib shadow + crib
     cx = x + w // 2
     cv.fill_rect(cx - 32, y + 56, 68, 3, (200, 196, 180))
@@ -1456,8 +1638,10 @@ def scene_births(cv, x, y, w, h):
         cv.fill_rect(rx, y + 36, 3, 18, WOOD)
     cv.fill_rect(cx - 34, y + 52, 68, 4, WOOD)
     cv.fill_rect(cx - 30, y + 36, 60, 8, (250, 245, 235))
-    # blanket fold
+    # blanket fold + top-edge line + pillow under the left head
     cv.fill_rect(cx - 30, y + 40, 60, 2, (200, 170, 190))
+    cv.fill_rect(cx - 30, y + 36, 60, 1, (180, 150, 170))
+    cv.fill_rect(cx - 30, y + 38, 12, 5, WHITE)
     cv.circle(cx - 12, y + 32, 6, (255, 220, 200))
     cv.circle(cx + 12, y + 32, 6, (255, 220, 200))
     # mobile: moon + stars hanging
@@ -1466,10 +1650,12 @@ def scene_births(cv, x, y, w, h):
     cv.circle(cx + 10, y + 20, 2, RED_BR)
     cv.circle(cx - 22, y + 16, 3, (255, 230, 150))
     cv.circle(cx + 22, y + 16, 2, AMBER)
-    # white chip behind the +12.2% metric
+    # white chip behind the +12.2% metric (shadow + TEAL outline)
     tw = text_width("+12.2%", 11, True)
+    cv.fill_rect(x + w - 7 - tw - 8, y + 3, tw + 12, 17, (200, 196, 180))
     cv.fill_rect(x + w - 8 - tw - 8, y + 2, tw + 12, 17,
                  (255, 252, 240))
+    rect_outline(cv, x + w - 8 - tw - 8, y + 2, tw + 12, 17, TEAL, 1)
     cv.text(x + w - 8, y + 12, "+12.2%", 11, True, TEAL, align="right")
 
 
@@ -1543,7 +1729,9 @@ def draw_timeline(cv):
     cv.text(M + 48, 176, "THE DAY IN UTC", 9, True, WHITE, align="center")
     cell = (CW - 96) / 6
     for i, (t, label) in enumerate(TIMELINE):
-        x = M + 96 + i * cell + 6
+        w = (text_width(t, 9.5, True) + text_width(" ", 9.5, True)
+             + text_width(label, 9, False))
+        x = M + 96 + i * cell + (cell - w) / 2
         cv.text(x, 176, t, 9.5, True, RED)
         cv.text(x + text_width(t + " ", 9.5, True), 176, label, 9, False,
                 INK)
@@ -1586,13 +1774,13 @@ def draw_small(cv):
         y = 482 + row * 148
         SCENES[key](cv, x, y, 186, 62)
         num_badge(cv, x + 12, y + 12, i + 4, 9)
-        cv.text(x, y + 74, kick, 9, True, RED)
+        cv.text(x, y + 72, kick, 9, True, RED)
         lines = wrap_text(head, 14, True, 186)
         for k, ln in enumerate(lines):
-            cv.text(x, y + 88 + k * 15, ln, 14, True, INK)
+            cv.text(x, y + 86 + k * 15, ln, 14, True, INK)
         dlines = wrap_text(deck, 9.5, False, 186)
         for k, ln in enumerate(dlines):
-            cv.text(x, y + 114 + k * 11, ln, 9.5, False, DECK_GREY)
+            cv.text(x, y + 111 + k * 10, ln, 9.5, False, DECK_GREY)
         pill(cv, x, y + 132, p, 8)
 
 
@@ -1658,7 +1846,7 @@ def draw_map(cv):
         if name in label_dx:
             dx, dy, al = label_dx[name]
             cv.text(x + dx, y + dy, name.upper(), 8, True, TEAL, align=al)
-    cv.text(M, 933, "Seoul also story 13 \u00b7 Canberra also story 6",
+    cv.text(M, 931, "Seoul also story 13 \u00b7 Canberra also story 6",
             8, False, INK_SOFT)
 
 
