@@ -856,6 +856,25 @@ def pill_right(cv, x_right, y, label, size=9):
     return w
 
 
+def data_chip(cv, x, y, label, size, fill, tcol):
+    """Bold solid data chip, left-anchored at x, top y; returns width.
+    v2.13: one solid accent block + bold figure, so the core number
+    reads at thumbnail size. Height follows the pill convention
+    (size + 5, baseline y + size + 1)."""
+    w = int(text_width(label, size, True)) + 12
+    cv.fill_rect(x, y, w, size + 5, fill)
+    cv.text(x + w // 2, y + size + 1, label, size, True, tcol,
+            align="center")
+    return w
+
+
+def data_chip_right(cv, x_right, y, label, size, fill, tcol):
+    """data_chip right-anchored at x_right; returns width."""
+    w = int(text_width(label, size, True)) + 12
+    data_chip(cv, x_right - w, y, label, size, fill, tcol)
+    return w
+
+
 def num_badge(cv, cx, cy, n, r=9):
     """Red numbered circle with white bold number."""
     cv.circle(cx, cy, r, RED)
@@ -1322,10 +1341,12 @@ def scene_cpi(cv, x, y, w, h):
     bw = 22
     for i, bh in enumerate(bars):
         bx = x + 12 + i * 27
+        # v2.13: cooler bars except the hot last one — the saturated
+        # accent is now the data chip, not five red bars
         cv.fill_rect(bx, y + h - 8 - bh, bw, bh,
-                     (230, 60, 40) if i == 4 else (178, 90, 70))
+                     (230, 60, 40) if i == 4 else (186, 112, 98))
         # highlight edge + value dot on each bar (hot dot on the last)
-        cv.fill_rect(bx, y + h - 8 - bh, 3, bh, (205, 120, 100))
+        cv.fill_rect(bx, y + h - 8 - bh, 3, bh, (198, 128, 108))
         cv.circle(bx + bw // 2, y + h - 10 - bh,
                   4 if i == 4 else 3,
                   (255, 120, 80) if i == 4 else (120, 40, 30))
@@ -1349,12 +1370,10 @@ def scene_cpi(cv, x, y, w, h):
     cv.line(x + 149, y + 36, x + 155, y + 36, (255, 120, 80), 1)
     cv.line(x + 152, y + 33, x + 152, y + 39, (255, 120, 80), 1)
     cv.fill_rect(x + 8, y + h - 6, w - 16, 2, (200, 190, 165))
-    # opaque chip so the tag never sits on a bar (shadow + outline);
-    # widened to a fuller data chip
-    cv.fill_rect(x + w - 95, y + 7, 92, 20, (150, 140, 120))
-    cv.fill_rect(x + w - 96, y + 6, 92, 20, (255, 250, 235))
-    rect_outline(cv, x + w - 96, y + 6, 92, 20, RED_BR, 1)
-    cv.text(x + w - 8, y + 21, "+4.9% \u00b7 OCT", 13, True, RED, align="right")
+    # v2.13: bold solid data chip (navy + white) so the figure reads at
+    # thumbnail size; same top-right rect as the old cream chip
+    data_chip_right(cv, x + w - 4, y + 6, "+4.9% \u00b7 OCT", 13, NAVY,
+                    WHITE)
 
 
 def scene_garment(cv, x, y, w, h):
@@ -1421,13 +1440,10 @@ def scene_garment(cv, x, y, w, h):
         sx = x + 104 + i * 34
         cv.fill_rect(sx + 1, y + 51, 18, 2, (180, 175, 155))
         cv.fill_rect(sx, y + 38, 18, 12, col)
-    # full-width data bar, bottom-right (replaces the corner chip:
-    # pay + rise, both from the deck)
-    cv.fill_rect(x + 97, y + h - 16, 84, 15, (150, 140, 120))
-    cv.fill_rect(x + 96, y + h - 17, 84, 15, (255, 250, 235))
-    rect_outline(cv, x + 96, y + h - 17, 84, 15, TEAL, 1)
-    cv.text(x + 138, y + h - 6, "17,000 TK \u00b7 +36%", 8.5, True, TEAL,
-            align="center")
+    # v2.13: bold solid data chip (navy + white). Pay figure only — the
+    # +36% rise is already the headline directly below the scene.
+    data_chip_right(cv, x + w - 6, y + h - 17, "17,000 TK", 12, NAVY,
+                    WHITE)
 
 
 def scene_treaty(cv, x, y, w, h):
@@ -1444,11 +1460,8 @@ def scene_treaty(cv, x, y, w, h):
     cv.fill_rect(x + w - 34, y + 6, 24, 18, (180, 205, 225))
     cv.fill_rect(x + w - 23, y + 6, 2, 18, WHITE)
     cv.fill_rect(x + w - 34, y + 14, 24, 2, WHITE)
-    # aid data chip, top-center between the flags (new: scene had none)
-    cv.fill_rect(x + 67, y + 15, 54, 16, (180, 160, 120))
-    cv.fill_rect(x + 66, y + 14, 54, 16, (255, 250, 235))
-    rect_outline(cv, x + 66, y + 14, 54, 16, RED_BR, 1)
-    cv.text(x + 93, y + 26, "A$740M", 9, True, TEAL, align="center")
+    # v2.13: bold solid data chip (navy + white), same top-center slot
+    data_chip(cv, x + 66, y + 14, "A$740M", 11, NAVY, WHITE)
     # table shadow + table + document + pens
     cv.fill_rect(x + 56, y + h - 16, 78, 3, (200, 192, 170))
     cv.fill_rect(x + 52, y + h - 18, 82, 6, WOOD)
@@ -1507,6 +1520,9 @@ def scene_store(cv, x, y, w, h):
     Layers: sky band + sun + storefront with shaded awning + windows
     with reflections + door + figures + cart + tree + pavement."""
     vgrad(cv, x, y, w, h, (198, 218, 234), (236, 228, 208))
+    # v2.13: muted awning brick (was RED_BR) — the saturated accent is
+    # now the data chip, not the whole storefront
+    AWN = (198, 72, 58)
     # sky band + sun
     cv.fill_rect(x, y, w, 12, (198, 218, 234))
     cv.circle(x + w - 14, y + 8, 5, (255, 220, 120))
@@ -1516,18 +1532,18 @@ def scene_store(cv, x, y, w, h):
     cv.fill_rect(x + 12, y + 18, w - 24, h - 18, (240, 232, 210))
     rect_outline(cv, x + 12, y + 18, w - 24, h - 18, INK_SOFT, 1)
     # sign band above the awning
-    cv.fill_rect(x + 12, y + 13, w - 24, 5, RED_BR)
+    cv.fill_rect(x + 12, y + 13, w - 24, 5, AWN)
     cv.fill_rect(x + 12, y + 13, w - 24, 1, (255, 150, 120))
     # striped awning (with shade under it)
     for i in range(8):
-        col = RED_BR if i % 2 == 0 else WHITE
+        col = AWN if i % 2 == 0 else WHITE
         cv.fill_poly([(x + 12 + i * 20, y + 18), (x + 32 + i * 20, y + 18),
                       (x + 28 + i * 20, y + 30), (x + 8 + i * 20, y + 30)],
                      col)
     cv.fill_rect(x + 12, y + 30, w - 24, 3, (210, 200, 175))
     # scalloped awning edge
     for i in range(8):
-        col = RED_BR if i % 2 == 0 else WHITE
+        col = AWN if i % 2 == 0 else WHITE
         cv.circle(x + 22 + i * 20, y + 31, 3, col)
     # v2.12: awning shade stripes on the wall (clear of windows + door)
     cv.line(x + 52, y + 33, x + 68, y + 42, (225, 215, 190), 1)
@@ -1579,6 +1595,9 @@ def scene_store(cv, x, y, w, h):
     cv.circle(x + 9, y + 37, 3, (130, 185, 130))
     # pavement edge line above the cart strip
     cv.fill_rect(x + 4, y + h - 10, w - 8, 1, (200, 190, 165))
+    # v2.13: bold solid data chip "10 FREED" (deck figure: 10 of ~30
+    # freed), pinned over the sign band top-left, clear of the badge.
+    data_chip(cv, x + 26, y + 3, "10 FREED", 11, NAVY, WHITE)
 
 
 def scene_tariffs(cv, x, y, w, h):
@@ -1640,15 +1659,11 @@ def scene_tariffs(cv, x, y, w, h):
     cv.fill_rect(x + 8, y + h - 3, w - 16, 2, (20, 26, 44))
     cv.circle(x + 150, y + 8, 1, WHITE)
     cv.circle(x + 36, y + 52, 1, WHITE)
-    # tariff tags (shadow + warm outline so they read at thumbnail)
-    cv.fill_rect(x + 33, y + 9, 28, 16, (120, 30, 30))
-    cv.fill_rect(x + 34, y + 10, 26, 14, RED_BR)
-    rect_outline(cv, x + 34, y + 10, 26, 14, (255, 150, 120), 1)
-    cv.text(x + 47, y + 21, "16", 10, True, WHITE, align="center")
-    cv.fill_rect(x + w - 37, y + 11, 28, 16, (120, 30, 30))
-    cv.fill_rect(x + w - 36, y + 12, 26, 14, RED_BR)
-    rect_outline(cv, x + w - 36, y + 12, 26, 14, (255, 150, 120), 1)
-    cv.text(x + w - 23, y + 23, "%", 11, True, WHITE, align="center")
+    # v2.13: bold solid data chips (white + red) — "16" + "ECONOMIES".
+    # The old "16"+"%" pair misread as 16%: the verified fact is 16
+    # economies, rates not announced.
+    data_chip(cv, x + 30, y + 8, "16", 14, WHITE, RED)
+    data_chip_right(cv, x + w - 6, y + 10, "ECONOMIES", 9, WHITE, RED)
 
 
 def scene_pyongyang(cv, x, y, w, h):
@@ -1710,17 +1725,12 @@ def scene_pyongyang(cv, x, y, w, h):
                  (200, 40, 40))
     cv.circle(x + 22, y + 19, 2, WHITE)
     # ground lights (kept left of the widened chip, clear of the pyramid)
-    for gx in (x + 74, x + 82, x + 90):
+    for gx in (x + 62, x + 70, x + 78):
         cv.circle(gx, y + h - 8, 2, (255, 220, 130))
     cv.fill_rect(x, y + h - 4, w, 2, (90, 110, 170))
-    # dark chip behind the metric, widened to the full fact (shadow + outline)
-    tw = text_width("48H TO LEAVE", 9, True)
-    cv.fill_rect(x + w - 7 - tw - 8, y + h - 19, tw + 12, 17, (0, 0, 0))
-    cv.fill_rect(x + w - 8 - tw - 8, y + h - 20, tw + 12, 17, (12, 16, 34))
-    rect_outline(cv, x + w - 8 - tw - 8, y + h - 20, tw + 12, 17,
-                 (255, 220, 130), 1)
-    cv.text(x + w - 8, y + h - 6, "48H TO LEAVE", 9, True, WHITE,
-            align="right")
+    # v2.13: bold solid data chip (white + red), same bottom-right slot
+    data_chip_right(cv, x + w - 8, y + h - 20, "48H TO LEAVE", 10, WHITE,
+                    RED)
 
 
 def scene_court(cv, x, y, w, h):
@@ -1790,17 +1800,9 @@ def scene_court(cv, x, y, w, h):
                   (x + w - 5, y + 30)], (140, 40, 40))
     cv.fill_poly([(x + w - 5, y + 32), (x + w - 22, y + 36),
                   (x + w - 5, y + 40)], (180, 60, 60))
-    # sentencing data chip, top-left (new: second fact on the card)
-    cv.fill_rect(x + 25, y + 3, 52, 16, (180, 160, 120))
-    cv.fill_rect(x + 24, y + 2, 52, 16, (255, 250, 235))
-    rect_outline(cv, x + 24, y + 2, 52, 16, RED_BR, 1)
-    cv.text(x + 28, y + 14, "MAR 2027", 9, True, RED)
-    # cream chip behind the GUILTY metric (shadow + outline)
-    tw = text_width("GUILTY", 10, True)
-    cv.fill_rect(x + w - 7 - tw - 8, y + 3, tw + 12, 16, (180, 160, 120))
-    cv.fill_rect(x + w - 8 - tw - 8, y + 2, tw + 12, 16, (255, 250, 235))
-    rect_outline(cv, x + w - 8 - tw - 8, y + 2, tw + 12, 16, RED_BR, 1)
-    cv.text(x + w - 8, y + 14, "GUILTY", 10, True, RED, align="right")
+    # v2.13: bold solid data chips (navy + white), same two slots
+    data_chip(cv, x + 24, y + 2, "MAR 2027", 10, NAVY, WHITE)
+    data_chip_right(cv, x + w - 8, y + 2, "GUILTY", 11, NAVY, WHITE)
 
 
 def scene_mine(cv, x, y, w, h):
@@ -1876,13 +1878,8 @@ def scene_mine(cv, x, y, w, h):
     for (gx, gy) in ((x + 34, y + 12), (x + 120, y + 21), (x + 140, y + 44)):
         cv.line(gx - 2, gy, gx + 2, gy, (255, 220, 120), 1)
         cv.line(gx, gy - 2, gx, gy + 2, (255, 220, 120), 1)
-    # dark chip behind the metric, widened to depth + unit (shadow + outline)
-    tw = text_width("100 M DEEP", 9, True)
-    cv.fill_rect(x + w - 7 - tw - 8, y + 3, tw + 12, 15, (0, 0, 0))
-    cv.fill_rect(x + w - 8 - tw - 8, y + 2, tw + 12, 15, (20, 16, 12))
-    rect_outline(cv, x + w - 8 - tw - 8, y + 2, tw + 12, 15,
-                 (255, 220, 120), 1)
-    cv.text(x + w - 8, y + 14, "100 M DEEP", 9, True, WHITE, align="right")
+    # v2.13: bold solid data chip (white + red), same top-right slot
+    data_chip_right(cv, x + w - 8, y + 2, "100 M DEEP", 11, WHITE, RED)
 
 
 def scene_blast(cv, x, y, w, h):
@@ -1955,14 +1952,9 @@ def scene_blast(cv, x, y, w, h):
         cv.fill_rect(bx, y + h - 14, 10, 3, (90, 82, 74))
         cv.fill_rect(bx, y + h - 9, 10, 2, (255, 200, 60))
         cv.fill_rect(bx, y + h - 14, 2, 12, (180, 170, 160))
-    # dark chip behind the metric, widened to time + barrels (shadow + outline)
-    tw = text_width("9 AM CT \u00b7 68 BARRELS", 9, True)
-    cv.fill_rect(x + w - 7 - tw - 8, y + 3, tw + 12, 15, (0, 0, 0))
-    cv.fill_rect(x + w - 8 - tw - 8, y + 2, tw + 12, 15, (16, 14, 12))
-    rect_outline(cv, x + w - 8 - tw - 8, y + 2, tw + 12, 15,
-                 (255, 220, 120), 1)
-    cv.text(x + w - 8, y + 12, "9 AM CT \u00b7 68 BARRELS", 9, True, WHITE,
-            align="right")
+    # v2.13: bold solid data chip (white + red), same top-right slot
+    data_chip_right(cv, x + w - 8, y + 2, "9 AM CT \u00b7 68 BARRELS", 11,
+                    WHITE, RED)
 
 
 def scene_births(cv, x, y, w, h):
@@ -2034,13 +2026,8 @@ def scene_births(cv, x, y, w, h):
     cv.circle(cx + 34, y + 24, 2, AMBER)
     cv.line(x + 96, y + 18, x + 102, y + 18, AMBER, 1)
     cv.line(x + 99, y + 15, x + 99, y + 21, AMBER, 1)
-    # white chip behind the +12.2% metric (shadow + TEAL outline)
-    tw = text_width("+12.2%", 11, True)
-    cv.fill_rect(x + w - 7 - tw - 8, y + 3, tw + 12, 17, (200, 196, 180))
-    cv.fill_rect(x + w - 8 - tw - 8, y + 2, tw + 12, 17,
-                 (255, 252, 240))
-    rect_outline(cv, x + w - 8 - tw - 8, y + 2, tw + 12, 17, TEAL, 1)
-    cv.text(x + w - 8, y + 12, "+12.2%", 11, True, TEAL, align="right")
+    # v2.13: bold solid data chip (navy + white), same top-right slot
+    data_chip_right(cv, x + w - 8, y + 2, "+12.2%", 12, NAVY, WHITE)
 
 
 def scene_macaw(cv, x, y, w, h):
@@ -2550,7 +2537,11 @@ def draw_datecheck(cv):
     # + header/prose up 1px. Frees 2px for the DATE CHECK->footer gap
     # (now 4px) while the interior keeps 1px clearance top and bottom
     # (header ink 969, last prose ink ~1006, borders 966-967 / 1008-1009).
-    rect_outline(cv, M, 966, CW, 44, RED, 2)
+    # v2.13: lighter band — pale tint fill + 1px border (was 2px, no
+    # fill). Same box, same text, same baselines: legend->box gap stays
+    # 4px, box->footer gap stays 3px.
+    cv.fill_rect(M, 966, CW, 44, (250, 243, 235))
+    rect_outline(cv, M, 966, CW, 44, RED, 1)
     cv.text(26, 976, "DATE CHECK \u2014 LEFT OUT AS EARLIER NEWS. "
             "THESE ARE NOT TODAY'S.", 10, True, RED)
     cv.text(998, 976, "+35 MORE CHECKED", 10, True, RED, align="right")
