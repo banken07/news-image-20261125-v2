@@ -2160,7 +2160,7 @@ def draw_brief(cv):
         y = 810 + row * 11.5
         cv.text(x, y, "%d %s" % (num, item), 10, True, INK)
     # 4 drawn tiles in a row: scene + number badge + label below.
-    # Strip y 876..940; HOW SURE legend stays at 945.
+    # Strip y 876..940; HOW SURE legend at 949 (v2.9-fix).
     for t, (idx, label, key, num) in enumerate(ALSO_TILES):
         x = 346 + t * 166
         SCENES[key](cv, x, 876, 162, 44)
@@ -2171,8 +2171,13 @@ def draw_brief(cv):
 
 
 def draw_legend(cv):
+    # v2.9-fix: whole row up 1px (pills 949, text 959) — buys 1px for the
+    # legend->DATE CHECK gap without touching tiles (caption gap stays ~15px)
+    # or the map note (still 12px below it). Pill height NOT trimmed: the
+    # expl-text descenders reach the same row as the pill fill, so trimming
+    # the fill alone would not move the measured legend bottom.
     x = M
-    cv.text(x, 960, "HOW SURE \u2014 ", 9, True, INK)
+    cv.text(x, 959, "HOW SURE \u2014 ", 9, True, INK)
     x += text_width("HOW SURE \u2014 ", 9, True)
     parts = [("OFFICIAL", "govt/company statement"),
              ("CONFIRMED", "2+ major outlets"),
@@ -2181,28 +2186,29 @@ def draw_legend(cv):
              ("ONGOING", "still unfolding"),
              ("SCHEDULED", "due")]
     for j, (label, expl) in enumerate(parts):
-        w = pill(cv, x, 950, label, 8)
+        w = pill(cv, x, 949, label, 8)
         x += w + 4
-        cv.text(x, 960, expl, 8.5, False, INK_SOFT)
+        cv.text(x, 959, expl, 8.5, False, INK_SOFT)
         x += text_width(expl, 8.5, False)
         if j < len(parts) - 1:
-            cv.text(x, 960, " \u00b7 ", 8.5, False, INK_SOFT)
+            cv.text(x, 959, " \u00b7 ", 8.5, False, INK_SOFT)
             x += text_width(" \u00b7 ", 8.5, False)
 
 
 def draw_datecheck(cv):
-    # v2.9: box shifted +5 (966..1012, 46 tall) so the tile-label row
-    # above HOW SURE gains breathing room; prose pitch 11 -> 10.5
-    # keeps 3 lines inside the shorter box.
-    rect_outline(cv, M, 966, CW, 46, RED, 2)
-    cv.text(26, 977, "DATE CHECK \u2014 LEFT OUT AS EARLIER NEWS. "
+    # v2.9-fix: box 46 -> 44 tall (966..1009) + prose pitch 10.5 -> 10
+    # + header/prose up 1px. Frees 2px for the DATE CHECK->footer gap
+    # (now 4px) while the interior keeps 1px clearance top and bottom
+    # (header ink 969, last prose ink ~1006, borders 966-967 / 1008-1009).
+    rect_outline(cv, M, 966, CW, 44, RED, 2)
+    cv.text(26, 976, "DATE CHECK \u2014 LEFT OUT AS EARLIER NEWS. "
             "THESE ARE NOT TODAY'S.", 10, True, RED)
-    cv.text(998, 977, "+35 MORE CHECKED", 10, True, RED, align="right")
+    cv.text(998, 976, "+35 MORE CHECKED", 10, True, RED, align="right")
     # same 12 items, same wording, reflowed as flowing prose (3 lines)
     prose = " \u00b7 ".join(DATECHECK)
     lines = wrap_text(prose, 9.5, False, 972)
     for k, ln in enumerate(lines):
-        cv.text(26, 986 + k * 10.5, ln, 9.5, False, INK)
+        cv.text(26, 985 + k * 10, ln, 9.5, False, INK)
 
 
 def draw_footer(cv):
