@@ -1263,10 +1263,10 @@ def scene_garment(cv, x, y, w, h):
     for (bx, by) in ((x + 96, y + 7), (x + 112, y + 11)):
         cv.line(bx - 4, by, bx, by - 2, (90, 90, 80), 1)
         cv.line(bx, by - 2, bx + 4, by, (90, 90, 80), 1)
-    # potted plant by the factory door (sits on the taller scene floor)
-    cv.fill_rect(x + 78, y + 62, 6, 7, (150, 110, 70))
-    cv.circle(x + 81, y + 60, 4, (90, 140, 70))
-    cv.circle(x + 78, y + 63, 2, (110, 160, 90))
+    # potted plant by the factory door (sits on the shorter scene floor)
+    cv.fill_rect(x + 78, y + 59, 6, 7, (150, 110, 70))
+    cv.circle(x + 81, y + 57, 4, (90, 140, 70))
+    cv.circle(x + 78, y + 60, 2, (110, 160, 90))
     # factory
     cv.fill_rect(x + 10, y + 22, 62, h - 22, (150, 140, 120))
     cv.fill_poly([(x + 10, y + 22), (x + 24, y + 12), (x + 38, y + 22),
@@ -1280,9 +1280,9 @@ def scene_garment(cv, x, y, w, h):
     for wx in (18, 34, 50):
         cv.fill_rect(x + wx, y + 32, 8, 8, (255, 240, 180))
         cv.fill_rect(x + wx, y + 46, 8, 6, (255, 240, 180))
-    # door, bottom-right of the factory (on the taller scene floor)
-    cv.fill_rect(x + 60, y + 58, 10, 12, (90, 80, 66))
-    cv.circle(x + 67, y + 64, 1, (255, 220, 130))
+    # door, bottom-right of the factory (on the shorter scene floor)
+    cv.fill_rect(x + 60, y + 55, 10, 12, (90, 80, 66))
+    cv.circle(x + 67, y + 61, 1, (255, 220, 130))
     # clothesline (two rows, garments with shadows)
     cv.line(x + 84, y + 16, x + w - 8, y + 16, INK, 1)
     for i, col in enumerate((TEAL, RED_BR, AMBER)):
@@ -1393,11 +1393,11 @@ def scene_store(cv, x, y, w, h):
     cv.line(x + 140, y + 38, x + 162, y + 50, (200, 220, 235), 1)
     cv.fill_rect(x + 80, y + 36, 26, h - 36, (90, 70, 50))
     cv.circle(x + 100, y + 48, 2, (255, 220, 120))
-    # three figures with ground shadows (feet on the taller scene floor)
+    # three figures with ground shadows (feet on the shorter scene floor)
     for fx, col in ((58, TEAL), (128, TEAL), (118, RED_BR)):
-        cv.fill_rect(x + fx - 6, y + 68, 12, 2, (180, 170, 145))
+        cv.fill_rect(x + fx - 6, y + 65, 12, 2, (180, 170, 145))
         cv.circle(x + fx, y + 54, 4, (40, 40, 40))
-        cv.fill_rect(x + fx - 4, y + 58, 8, 12, col)
+        cv.fill_rect(x + fx - 4, y + 58, 8, 9, col)
     # shopping cart, bottom-left (with goods) + pavement
     cv.fill_rect(x + 4, y + h - 8, w - 8, 2, (180, 170, 145))
     cv.line(x + 6, y + h - 16, x + 20, y + h - 16, INK, 1)
@@ -1424,8 +1424,12 @@ def scene_tariffs(cv, x, y, w, h):
     Layers: night gradient + stars + flag + statue + shaded dome +
     steps + glowing tags."""
     vgrad(cv, x, y, w, h, NAVY, NAVY_LT)
-    starfield(cv, x, y, w, h // 3, 4242)
-    starfield(cv, x, y, w, h // 2, 777)
+    # starfield regions pinned to the v2.5 heights (h was 70): the seeded
+    # placement is sy = y + s % region, so deriving the region from the
+    # new h=67 would reshuffle stars and can push a star 1px over the
+    # scene's top edge. Regions sit at the scene top, all inside 67px.
+    starfield(cv, x, y, w, 23, 4242)
+    starfield(cv, x, y, w, 35, 777)
     # flag pole + flag, left (clear of the "16" tag) + white star dot
     cv.fill_rect(x + 10, y + 10, 3, 34, (200, 200, 205))
     cv.fill_poly([(x + 13, y + 10), (x + 30, y + 14), (x + 13, y + 18)],
@@ -1452,8 +1456,8 @@ def scene_tariffs(cv, x, y, w, h):
         cv.line(sx - 3, sy, sx + 3, sy, WHITE, 1)
         cv.line(sx, sy - 3, sx, sy + 3, WHITE, 1)
     for cx in range(dx - 38, dx + 40, 12):
-        cv.fill_rect(cx, y + 56, 5, 14, WHITE)
-        cv.fill_rect(cx + 3, y + 56, 2, 14, (210, 210, 215))
+        cv.fill_rect(cx, y + 56, 5, 11, WHITE)
+        cv.fill_rect(cx + 3, y + 56, 2, 11, (210, 210, 215))
     # steps
     cv.fill_rect(dx - 46, y + h - 8, 92, 4, (200, 200, 205))
     cv.fill_rect(dx - 40, y + h - 12, 80, 3, (170, 170, 178))
@@ -1473,7 +1477,10 @@ def scene_pyongyang(cv, x, y, w, h):
     Layers: night gradient + stars + moon halo + pyramid with lit
     windows + smaller building + ground lights + dark chip for 48H."""
     vgrad(cv, x, y, w, h, (16, 22, 48), (40, 52, 92))
-    starfield(cv, x, y, w, h - 20, 777)
+    # starfield region pinned to the v2.5 height (h was 70): seeded
+    # placement is sy = y + s % region, so h - 20 = 47 would reshuffle
+    # stars vs v2.5. Region sits at the scene top, inside 67px.
+    starfield(cv, x, y, w, 50, 777)
     # moon + halo, top-right (halo kept inside the scene)
     glow(cv, x + w - 22, y + 12, 18,
          [(30, 36, 66), (90, 100, 140), (220, 220, 230)])
@@ -1834,10 +1841,10 @@ def draw_timeline(cv):
     cv.fill_rect(M, 162, 84, 20, NAVY)
     cv.text(M + 42, 176, "THE DAY IN UTC", 9, True, WHITE, align="center")
     # one group, fixed gaps: even rhythm, symmetric insets (was per-cell
-    # centring: insets 28/22, gaps 44-65)
+    # centring: insets 28/22, gaps 44-65; v2.5 gap 54, insets 31/32)
     widths = [text_width(t, 9.5, True) + text_width(" ", 9.5, True)
               + text_width(label, 8.5, False) for (t, label) in TIMELINE]
-    gap = 54
+    gap = 50
     total = sum(widths) + gap * (len(TIMELINE) - 1)
     x = M + 84 + ((CW - 84) - total) / 2
     for i, (t, label) in enumerate(TIMELINE):
@@ -1887,15 +1894,15 @@ def draw_small(cv):
         row, col = divmod(i, 5)
         x = M + col * 196
         y = 460 + row * 161
-        SCENES[key](cv, x, y, 186, 70)
+        SCENES[key](cv, x, y, 186, 67)
         num_badge(cv, x + 12, y + 12, i + 4, 9)
-        cv.text(x, y + 79, kick, 9, True, RED)
+        cv.text(x, y + 76, kick, 9, True, RED)
         lines = wrap_text(head, 15, True, 186)
         for k, ln in enumerate(lines):
-            cv.text(x, y + 92 + k * 14, ln, 15, True, INK)
+            cv.text(x, y + 89 + k * 14, ln, 15, True, INK)
         dlines = wrap_text(deck, 10.5, False, 186)
         for k, ln in enumerate(dlines):
-            cv.text(x, y + 118 + k * 11, ln, 10.5, False, DECK_GREY)
+            cv.text(x, y + 115 + k * 11, ln, 10.5, False, DECK_GREY)
         pill(cv, x, y + 146, p, 8)
 
 
@@ -1961,7 +1968,7 @@ def draw_map(cv):
         if name in label_dx:
             dx, dy, al = label_dx[name]
             cv.text(x + dx, y + dy, name.upper(), 8, True, TEAL, align=al)
-    cv.text(M, 930, "Seoul also story 13 \u00b7 Canberra also story 6",
+    cv.text(M, 932, "Seoul also story 13 \u00b7 Canberra also story 6",
             8, False, INK_SOFT)
 
 
@@ -1977,7 +1984,7 @@ def draw_brief(cv):
 
 def draw_legend(cv):
     x = M
-    cv.text(x, 950, "HOW SURE \u2014 ", 9, True, INK)
+    cv.text(x, 952, "HOW SURE \u2014 ", 9, True, INK)
     x += text_width("HOW SURE \u2014 ", 9, True)
     parts = [("OFFICIAL", "govt/company statement"),
              ("CONFIRMED", "2+ major outlets"),
@@ -1986,29 +1993,29 @@ def draw_legend(cv):
              ("ONGOING", "still unfolding"),
              ("SCHEDULED", "due")]
     for j, (label, expl) in enumerate(parts):
-        w = pill(cv, x, 940, label, 8)
+        w = pill(cv, x, 942, label, 8)
         x += w + 4
-        cv.text(x, 950, expl, 8.5, False, INK_SOFT)
+        cv.text(x, 952, expl, 8.5, False, INK_SOFT)
         x += text_width(expl, 8.5, False)
         if j < len(parts) - 1:
-            cv.text(x, 950, " \u00b7 ", 8.5, False, INK_SOFT)
+            cv.text(x, 952, " \u00b7 ", 8.5, False, INK_SOFT)
             x += text_width(" \u00b7 ", 8.5, False)
 
 
 def draw_datecheck(cv):
-    rect_outline(cv, M, 956, CW, 48, RED, 2)
-    cv.text(26, 968, "DATE CHECK \u2014 LEFT OUT AS EARLIER NEWS. "
+    rect_outline(cv, M, 958, CW, 48, RED, 2)
+    cv.text(26, 970, "DATE CHECK \u2014 LEFT OUT AS EARLIER NEWS. "
             "THESE ARE NOT TODAY'S.", 10, True, RED)
-    cv.text(998, 968, "+35 MORE CHECKED", 10, True, RED, align="right")
+    cv.text(998, 970, "+35 MORE CHECKED", 10, True, RED, align="right")
     # same 12 items, same wording, reflowed as flowing prose (3 lines)
     prose = " \u00b7 ".join(DATECHECK)
     lines = wrap_text(prose, 9.5, False, 972)
     for k, ln in enumerate(lines):
-        cv.text(26, 977 + k * 11, ln, 9.5, False, INK)
+        cv.text(26, 979 + k * 11, ln, 9.5, False, INK)
 
 
 def draw_footer(cv):
-    cv.text(512, 1015,
+    cv.text(512, 1017,
             "Sources: AP \u00b7 Reuters \u00b7 BBC \u00b7 Al Jazeera \u00b7 Yonhap "
             "\u00b7 ABS \u00b7 Mehr \u00b7 One Turn \u2014 All stories first reported "
             "or developing Wed 25 Nov 2026 unless dated in DATE CHECK \u00b7 "
