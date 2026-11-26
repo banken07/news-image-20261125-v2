@@ -1,14 +1,14 @@
 #!/usr/bin/env python3
-"""news-image-20261125 v2.4 - illustrated broadsheet, built from scratch.
+"""news-image-20261125 v2.8 - illustrated broadsheet, built from scratch.
 One image summing up Wednesday 25 November 2026's world news.
 Pure stdlib. Glyphs rendered from Liberation Serif outlines (GLYPH_BLOB,
 regenerated from the system TTFs in the v1 session) and its own PNG encoder.
 Layout, composition and all 13 code-drawn scenes are new for v2; only the
-glyph/PNG/text-metric machinery is shared with v1. v2.4 reflows the vertical
-budget to the small cards (hero scenes 115px, hero headlines 22px, stats
-40px; small scenes 70px, headlines 15px, decks 10.5px), adds in-scene data
-panels to heroes 2-3 + fuller chips on 7 small scenes, per-hero source
-lines, and a prose DATE CHECK. Writes exactly one file: entry.png in
+glyph/PNG/text-metric machinery is shared with v1. v2.8 promotes 4 also-list
+stories (macaw #22, Dragonfly #24, Iwo Jima #32, Para hockey #34) to drawn
+tiles in the IN BRIEF zone (3-col one-liners + 4-tile strip), taking drawn
+scenes from 13 to 17; heroes, small cards, UTC, map, legend and DATE CHECK
+keep their v2.7 geometry. Writes exactly one file: entry.png in
 MAKEFUN_OUTPUT_DIR (fallback /output). Deterministic: same bytes every run.
 """
 import base64
@@ -1772,13 +1772,187 @@ def scene_births(cv, x, y, w, h):
     cv.text(x + w - 8, y + 12, "+12.2%", 11, True, TEAL, align="right")
 
 
+def scene_macaw(cv, x, y, w, h):
+    """A9 (#22): Spix's macaw chick Hope hatches.
+    Layers: sky gradient + sun + branch + leaves + blue macaw
+    (yellow chest, white face, long tail) + pale chick + HOPE chip."""
+    vgrad(cv, x, y, w, h, (198, 224, 238), (246, 240, 224))
+    # sun with short rays, above the chick (clear of the HOPE chip)
+    cv.circle(x + 88, y + 10, 6, (255, 220, 120))
+    for (ax, ay, bx, by) in ((x + 78, y + 10, x + 81, y + 10),
+                             (x + 95, y + 10, x + 98, y + 10),
+                             (x + 88, y + 2, x + 88, y + 5)):
+        cv.line(ax, ay, bx, by, (255, 200, 100), 1)
+    # branch (slight diagonal) + leaves
+    cv.fill_poly([(x + 6, y + h - 12), (x + w - 6, y + h - 16),
+                  (x + w - 6, y + h - 12), (x + 6, y + h - 8)], WOOD)
+    for (lx, ly, dx, dy) in ((x + 18, y + h - 16, -8, -6),
+                             (x + 130, y + h - 18, 8, -7),
+                             (x + 142, y + h - 16, 6, -4)):
+        cv.fill_poly([(lx, ly), (lx + dx, ly + dy), (lx + dx + 4, ly + 2)],
+                     GREEN)
+    # macaw: tail (long, down-right), body, wing, head, beak, face patch
+    bx, by = x + 52, y + 20
+    cv.fill_poly([(bx + 4, by + 6), (bx + 26, by + 16), (bx + 22, by + 20),
+                  (bx + 2, by + 10)], (28, 64, 128))
+    cv.circle(bx, by, 10, (36, 80, 180))
+    cv.fill_poly([(bx - 8, by - 6), (bx + 2, by - 10), (bx + 4, by + 2),
+                  (bx - 6, by + 6)], (28, 64, 128))
+    cv.circle(bx - 2, by - 2, 5, (255, 210, 60))
+    cv.circle(bx - 4, by - 12, 6, (36, 80, 180))
+    cv.circle(bx - 8, by - 13, 3, WHITE)
+    cv.fill_poly([(bx + 1, by - 13), (bx + 9, by - 10), (bx + 1, by - 8)],
+                 (240, 170, 40))
+    cv.circle(bx - 5, by - 14, 1, INK)
+    # chick: pale fluff ball on the branch, right of the adult
+    cx, cy = x + 104, y + h - 20
+    cv.circle(cx, cy, 6, (238, 232, 218))
+    cv.circle(cx - 3, cy - 6, 4, (245, 240, 228))
+    cv.fill_poly([(cx + 1, cy - 7), (cx + 6, cy - 5), (cx + 1, cy - 4)],
+                 (240, 170, 40))
+    cv.circle(cx - 4, cy - 7, 1, INK)
+    # white chip behind HOPE (shadow + TEAL outline)
+    tw = text_width("HOPE", 9, True)
+    cv.fill_rect(x + w - 7 - tw - 8, y + 3, tw + 12, 15, (200, 196, 180))
+    cv.fill_rect(x + w - 8 - tw - 8, y + 2, tw + 12, 15, (255, 252, 240))
+    rect_outline(cv, x + w - 8 - tw - 8, y + 2, tw + 12, 15, TEAL, 1)
+    cv.text(x + w - 8, y + 12, "HOPE", 9, True, TEAL, align="right")
+
+
+def scene_dragonfly(cv, x, y, w, h):
+    """A11 (#24): Dragonfly Titan parts arrive.
+    Layers: night gradient + starfield + Titan haze disc + rotorcraft
+    (body, 4 rotor arms, rotor discs, legs) + TITAN chip."""
+    vgrad(cv, x, y, w, h, SKY_NIGHT, (30, 40, 80))
+    starfield(cv, x, y, w, h, 7)
+    # Titan: orange haze dome rising from the tile's bottom edge.
+    # Drawn as half-discs (flat side on y+h) so nothing spills below
+    # the tile into the label / legend rows.
+    tx = x + 42
+    for rr, c in ((28, (120, 70, 30)), (20, (200, 130, 60)),
+                  (12, (240, 180, 100))):
+        pts = [(tx + rr * math.cos(math.radians(a)),
+                y + h + rr * math.sin(math.radians(a)))
+               for a in range(180, 361, 10)]
+        cv.fill_poly(pts, c)
+    for rr, c in ((24, DUSK2), (18, DUSK3)):
+        pts = [(tx + rr * math.cos(math.radians(a)),
+                y + h + rr * math.sin(math.radians(a)))
+               for a in range(180, 361, 10)]
+        cv.fill_poly(pts, c)
+    # Dragonfly rotorcraft, centre-right
+    dx, dy = x + 112, y + 24
+    cv.fill_rect(dx - 7, dy - 2, 14, 5, (220, 224, 230))
+    cv.fill_rect(dx - 7, dy - 2, 14, 2, WHITE)
+    for (ox, oy) in ((-12, -6), (12, -6), (-12, 6), (12, 6)):
+        cv.line(dx, dy, dx + ox, dy + oy, (180, 186, 196), 1)
+        cv.line(dx + ox - 7, dy + oy, dx + ox + 7, dy + oy,
+                (220, 224, 230), 1)
+    cv.line(dx - 4, dy + 3, dx - 6, dy + 9, (180, 186, 196), 1)
+    cv.line(dx + 4, dy + 3, dx + 6, dy + 9, (180, 186, 196), 1)
+    cv.circle(dx + 5, dy, 2, (255, 220, 120))
+    # dark chip behind TITAN (shadow + amber outline)
+    tw = text_width("TITAN", 9, True)
+    cv.fill_rect(x + w - 7 - tw - 8, y + 3, tw + 12, 15, (0, 0, 0))
+    cv.fill_rect(x + w - 8 - tw - 8, y + 2, tw + 12, 15, (16, 14, 12))
+    rect_outline(cv, x + w - 8 - tw - 8, y + 2, tw + 12, 15,
+                 (255, 220, 120), 1)
+    cv.text(x + w - 8, y + 12, "TITAN", 9, True, WHITE, align="right")
+
+
+def scene_iwo(cv, x, y, w, h):
+    """A19 (#32): Iwo Jima eruption adds new land.
+    Layers: dusk gradient + sea band + volcano cone + eruption plume
+    (smoke + fire core) + lava streaks + new-land islet + NEW LAND chip."""
+    vgrad(cv, x, y, w, h // 2 + 8, DUSK3, DUSK1)
+    vgrad(cv, x, y + h // 2 + 8, w, h - h // 2 - 8, DUSK1, (90, 60, 40))
+    # sea band + wave lines
+    cv.fill_rect(x, y + h - 12, w, 12, SEA_DK)
+    cv.line(x + 8, y + h - 8, x + 30, y + h - 8, (120, 160, 200), 1)
+    cv.line(x + 120, y + h - 5, x + 152, y + h - 5, (120, 160, 200), 1)
+    # volcano cone (peak clear of the badge, base on the sea)
+    px, py = x + 70, y + 12
+    cv.fill_poly([(x + 28, y + h - 10), (px - 8, py), (px + 8, py),
+                  (x + 112, y + h - 10)], EARTH_DK)
+    cv.fill_poly([(x + 28, y + h - 10), (px - 8, py), (px - 2, py + 10),
+                  (x + 46, y + h - 10)], (70, 48, 32))
+    # eruption plume: smoke puffs + fire core at the crater
+    # (all tops >= y+1: nothing crosses the tile's top border)
+    for (ox, oy, r) in ((-6, -6, 5), (4, -6, 5), (0, -7, 4), (-12, -2, 4),
+                        (12, -3, 4)):
+        cv.circle(px + ox, py + oy, r, SMOKE)
+    cv.circle(px, py - 2, 4, FIRE)
+    cv.circle(px, py - 3, 2, FLAME)
+    # lava streaks down the cone
+    cv.line(px - 2, py + 4, px - 8, py + 18, (255, 140, 40), 1)
+    cv.line(px + 3, py + 4, px + 10, py + 16, (255, 170, 60), 1)
+    # new-land islet in the sea + wisp of smoke
+    cv.fill_poly([(x + 124, y + h - 4), (x + 132, y + h - 12),
+                  (x + 140, y + h - 12), (x + 150, y + h - 4)], EARTH_DK)
+    cv.circle(x + 136, y + h - 14, 3, SMOKE)
+    # white chip behind NEW LAND (shadow + RED outline)
+    tw = text_width("NEW LAND", 9, True)
+    cv.fill_rect(x + w - 7 - tw - 8, y + 3, tw + 12, 15, (200, 196, 180))
+    cv.fill_rect(x + w - 8 - tw - 8, y + 2, tw + 12, 15, (255, 252, 240))
+    rect_outline(cv, x + w - 8 - tw - 8, y + 2, tw + 12, 15, RED_BR, 1)
+    cv.text(x + w - 8, y + 12, "NEW LAND", 9, True, RED_BR, align="right")
+
+
+def scene_hockey(cv, x, y, w, h):
+    """A21 (#34): Canada women win Para hockey 10-0.
+    Layers: ice gradient + boards + rink lines + faceoff rings +
+    two sledge players + puck + goal posts + 10-0 chip."""
+    vgrad(cv, x, y, w, h, (228, 236, 246), (198, 214, 230))
+    # boards (top edge) + rink lines + faceoff rings
+    cv.fill_rect(x, y, w, 3, (60, 70, 90))
+    cv.line(x, y + 22, x + w, y + 22, RED, 1)
+    cv.line(x, y + 10, x + w, y + 10, BLUE, 1)
+    cv.line(x, y + 34, x + w, y + 34, BLUE, 1)
+    cv.ring(x + 26, y + 22, 8, 7, RED)
+    cv.ring(x + w - 46, y + 22, 8, 7, BLUE)
+    # goal posts, bottom-right (below the 10-0 chip)
+    cv.fill_rect(x + w - 16, y + h - 14, 2, 14, RED)
+    cv.fill_rect(x + w - 6, y + h - 14, 2, 14, RED)
+    cv.fill_rect(x + w - 16, y + h - 14, 12, 2, RED)
+    # sledge player 1 (red) + stick + puck near the goal
+    px, py = x + 96, y + 26
+    cv.fill_rect(px - 10, py + 2, 20, 4, (120, 120, 126))
+    cv.fill_rect(px - 6, py - 6, 12, 9, RED_BR)
+    cv.circle(px - 2, py - 10, 4, (40, 40, 48))
+    cv.line(px + 6, py - 2, px + 18, py + 8, INK, 1)
+    cv.circle(px + 24, py + 10, 3, INK)
+    # sledge player 2 (blue), chasing from the left
+    qx, qy = x + 56, y + 28
+    cv.fill_rect(qx - 10, qy + 2, 20, 4, (120, 120, 126))
+    cv.fill_rect(qx - 6, qy - 6, 12, 9, BLUE)
+    cv.circle(qx - 2, qy - 10, 4, (40, 40, 48))
+    cv.line(qx + 6, qy - 2, qx + 16, qy + 6, INK, 1)
+    # red chip behind 10-0 (white text, top-right)
+    tw = text_width("10-0", 9, True)
+    cv.fill_rect(x + w - 7 - tw - 8, y + 3, tw + 12, 15, (120, 20, 20))
+    cv.fill_rect(x + w - 8 - tw - 8, y + 2, tw + 12, 15, RED)
+    rect_outline(cv, x + w - 8 - tw - 8, y + 2, tw + 12, 15, WHITE, 1)
+    cv.text(x + w - 8, y + 12, "10-0", 9, True, WHITE, align="right")
+
+
 SCENES = {"chart": scene_chart, "rocket": scene_rocket,
           "tanker": scene_tanker, "cpi": scene_cpi,
           "garment": scene_garment, "treaty": scene_treaty,
           "store": scene_store, "tariffs": scene_tariffs,
           "pyongyang": scene_pyongyang, "court": scene_court,
           "mine": scene_mine, "blast": scene_blast,
-          "births": scene_births}
+          "births": scene_births, "macaw": scene_macaw,
+          "dragonfly": scene_dragonfly, "iwo": scene_iwo,
+          "hockey": scene_hockey}
+
+# (ALSO index, tile label, scene key, story number) — 4 also-list items
+# promoted to drawn tiles in the IN BRIEF zone.
+ALSO_TILES = [
+    (8, "SPIX'S MACAW CHICK HOPE HATCHES", "macaw", 22),
+    (10, "DRAGONFLY TITAN PARTS ARRIVE", "dragonfly", 24),
+    (18, "IWO JIMA ERUPTION ADDS NEW LAND", "iwo", 32),
+    (20, "CANADA WIN PARA HOCKEY 10-0", "hockey", 34),
+]
 
 # ---------------------------------------------------------------- layout
 def _fit_size(s, sizes, bold, max_w):
@@ -1975,11 +2149,25 @@ def draw_map(cv):
 def draw_brief(cv):
     cv.text(346, 795, "IN BRIEF \u00b7 22 MORE FROM 25 NOVEMBER", 10, True,
             TEAL)
-    for i, item in enumerate(ALSO):
-        col, row = divmod(i, 11)
-        x = 346 + col * 332
+    # 18 remaining one-liners: 3 columns x 6 rows (was 2 x 11), freeing
+    # the strip below for 4 drawn tiles. Numbers keep ALSO order.
+    tiled = {idx for (idx, _, _, _) in ALSO_TILES}
+    rest = [(14 + i, item) for i, item in enumerate(ALSO)
+            if i not in tiled]
+    for j, (num, item) in enumerate(rest):
+        col, row = divmod(j, 6)
+        x = 346 + col * 221
         y = 810 + row * 11.5
-        cv.text(x, y, "%d %s" % (14 + i, item), 10, True, INK)
+        cv.text(x, y, "%d %s" % (num, item), 10, True, INK)
+    # 4 drawn tiles in a row: scene + number badge + label below.
+    # Strip y 876..940; HOW SURE legend stays at 945.
+    for t, (idx, label, key, num) in enumerate(ALSO_TILES):
+        x = 346 + t * 166
+        SCENES[key](cv, x, 876, 162, 44)
+        rect_outline(cv, x, 876, 162, 44, RULE, 1)
+        num_badge(cv, x + 12, 888, num, 9)
+        sz = _fit_size(label, [8.5, 8, 7.5], True, 162)
+        cv.text(x, 934, label, sz, True, INK)
 
 
 def draw_legend(cv):
