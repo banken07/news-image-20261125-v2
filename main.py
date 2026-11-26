@@ -1833,14 +1833,18 @@ def draw_region(cv):
 def draw_timeline(cv):
     cv.fill_rect(M, 162, 84, 20, NAVY)
     cv.text(M + 42, 176, "THE DAY IN UTC", 9, True, WHITE, align="center")
-    cell = (CW - 84) / 6
+    # one group, fixed gaps: even rhythm, symmetric insets (was per-cell
+    # centring: insets 28/22, gaps 44-65)
+    widths = [text_width(t, 9.5, True) + text_width(" ", 9.5, True)
+              + text_width(label, 8.5, False) for (t, label) in TIMELINE]
+    gap = 54
+    total = sum(widths) + gap * (len(TIMELINE) - 1)
+    x = M + 84 + ((CW - 84) - total) / 2
     for i, (t, label) in enumerate(TIMELINE):
-        w = (text_width(t, 9.5, True) + text_width(" ", 9.5, True)
-             + text_width(label, 8.5, False))
-        x = M + 84 + i * cell + (cell - w) / 2
         cv.text(x, 176, t, 9.5, True, RED)
         cv.text(x + text_width(t + " ", 9.5, True), 176, label, 8.5, False,
                 INK)
+        x += widths[i] + gap
 
 
 def draw_stats(cv):
@@ -1885,13 +1889,13 @@ def draw_small(cv):
         y = 460 + row * 161
         SCENES[key](cv, x, y, 186, 70)
         num_badge(cv, x + 12, y + 12, i + 4, 9)
-        cv.text(x, y + 80, kick, 9, True, RED)
+        cv.text(x, y + 79, kick, 9, True, RED)
         lines = wrap_text(head, 15, True, 186)
         for k, ln in enumerate(lines):
-            cv.text(x, y + 94 + k * 15, ln, 15, True, INK)
+            cv.text(x, y + 92 + k * 14, ln, 15, True, INK)
         dlines = wrap_text(deck, 10.5, False, 186)
         for k, ln in enumerate(dlines):
-            cv.text(x, y + 121 + k * 11, ln, 10.5, False, DECK_GREY)
+            cv.text(x, y + 118 + k * 11, ln, 10.5, False, DECK_GREY)
         pill(cv, x, y + 146, p, 8)
 
 
@@ -1957,7 +1961,7 @@ def draw_map(cv):
         if name in label_dx:
             dx, dy, al = label_dx[name]
             cv.text(x + dx, y + dy, name.upper(), 8, True, TEAL, align=al)
-    cv.text(M, 928, "Seoul also story 13 \u00b7 Canberra also story 6",
+    cv.text(M, 930, "Seoul also story 13 \u00b7 Canberra also story 6",
             8, False, INK_SOFT)
 
 
