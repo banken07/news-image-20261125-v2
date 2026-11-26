@@ -2172,7 +2172,7 @@ def draw_brief(cv):
 
 def draw_legend(cv):
     x = M
-    cv.text(x, 955, "HOW SURE \u2014 ", 9, True, INK)
+    cv.text(x, 960, "HOW SURE \u2014 ", 9, True, INK)
     x += text_width("HOW SURE \u2014 ", 9, True)
     parts = [("OFFICIAL", "govt/company statement"),
              ("CONFIRMED", "2+ major outlets"),
@@ -2181,25 +2181,28 @@ def draw_legend(cv):
              ("ONGOING", "still unfolding"),
              ("SCHEDULED", "due")]
     for j, (label, expl) in enumerate(parts):
-        w = pill(cv, x, 945, label, 8)
+        w = pill(cv, x, 950, label, 8)
         x += w + 4
-        cv.text(x, 955, expl, 8.5, False, INK_SOFT)
+        cv.text(x, 960, expl, 8.5, False, INK_SOFT)
         x += text_width(expl, 8.5, False)
         if j < len(parts) - 1:
-            cv.text(x, 955, " \u00b7 ", 8.5, False, INK_SOFT)
+            cv.text(x, 960, " \u00b7 ", 8.5, False, INK_SOFT)
             x += text_width(" \u00b7 ", 8.5, False)
 
 
 def draw_datecheck(cv):
-    rect_outline(cv, M, 961, CW, 48, RED, 2)
-    cv.text(26, 973, "DATE CHECK \u2014 LEFT OUT AS EARLIER NEWS. "
+    # v2.9: box shifted +5 (966..1012, 46 tall) so the tile-label row
+    # above HOW SURE gains breathing room; prose pitch 11 -> 10.5
+    # keeps 3 lines inside the shorter box.
+    rect_outline(cv, M, 966, CW, 46, RED, 2)
+    cv.text(26, 977, "DATE CHECK \u2014 LEFT OUT AS EARLIER NEWS. "
             "THESE ARE NOT TODAY'S.", 10, True, RED)
-    cv.text(998, 973, "+35 MORE CHECKED", 10, True, RED, align="right")
+    cv.text(998, 977, "+35 MORE CHECKED", 10, True, RED, align="right")
     # same 12 items, same wording, reflowed as flowing prose (3 lines)
     prose = " \u00b7 ".join(DATECHECK)
     lines = wrap_text(prose, 9.5, False, 972)
     for k, ln in enumerate(lines):
-        cv.text(26, 982 + k * 11, ln, 9.5, False, INK)
+        cv.text(26, 986 + k * 10.5, ln, 9.5, False, INK)
 
 
 def draw_footer(cv):
