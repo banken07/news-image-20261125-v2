@@ -2077,7 +2077,14 @@ def draw_small(cv):
         dlines = wrap_text(deck, 10.5, False, 186)
         for k, ln in enumerate(dlines):
             cv.text(x, y + 113 + k * 11, ln, 10.5, False, DECK_GREY)
-        pill(cv, x, y + 146, p, 8)
+        # v2.10: pill +2 (y+148) for ALL cards, not just 5 & 13 — the
+        # deck->pill minimum was 20px on cards 5/7/10/13 (descender-heavy
+        # deck line 2) vs 22px elsewhere; moving only 5 & 13 would stagger
+        # the pills 2px within their rows. Uniform shift keeps every row
+        # aligned (22px min, 24px elsewhere) and spends 2px of the 5px
+        # paper below each row: row-0 pill -> row-1 scene is now 3px,
+        # row-1 pill -> section titles is now 3px. No other geometry moves.
+        pill(cv, x, y + 148, p, 8)
 
 
 def _project(lon, lat):
@@ -2142,7 +2149,10 @@ def draw_map(cv):
         if name in label_dx:
             dx, dy, al = label_dx[name]
             cv.text(x + dx, y + dy, name.upper(), 8, True, TEAL, align=al)
-    cv.text(M, 935, "Seoul also story 13 \u00b7 Canberra also story 6",
+    # v2.10: note baseline 935 -> 937 — clearance to the map box bottom
+    # border goes 10 -> 12px, clearance below to the legend goes 12 -> 10px;
+    # tiles and legend untouched, so the mini-scene row is not compressed.
+    cv.text(M, 937, "Seoul also story 13 \u00b7 Canberra also story 6",
             8, False, INK_SOFT)
 
 
